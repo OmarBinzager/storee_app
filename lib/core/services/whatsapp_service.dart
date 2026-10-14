@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../features/customers/domain/entities/customer.dart';
 import '../../features/orders/domain/entities/customer_order.dart';
+import '../money/money.dart';
 
 class WhatsAppService {
   const WhatsAppService();
@@ -26,8 +28,10 @@ class WhatsAppService {
   static String formatOrderInvoice({
     required CustomerOrder order,
     String? storeName,
+    String? footerMessage,
   }) {
     final store = storeName ?? 'ستوري بوتيك';
+    final footer = footerMessage ?? 'شكراً لثقتكِ وتعاملكِ الراقي معنا ✨';
     final buffer = StringBuffer();
 
     buffer.writeln('🌸 *$store* 🌸');
@@ -60,7 +64,64 @@ class WhatsAppService {
 
     buffer.writeln('📦 *حالة الطلب:* ${order.executionStatus.labelAr}');
     buffer.writeln('━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('شكراً لثقتكِ وتعاملكِ الراقي معنا ✨');
+    buffer.writeln(footer);
+
+    return buffer.toString();
+  }
+
+  /// Generates a complete aesthetic customer account statement
+  static String formatCustomerStatement({
+    required Customer customer,
+    required List<CustomerOrder> orders,
+    String? storeName,
+    String? footerMessage,
+  }) {
+    final store = storeName ?? 'ستوري بوتيك';
+    final footer = footerMessage ?? 'شكراً لثقتكِ وتعاملكِ الراقي معنا ✨';
+    final buffer = StringBuffer();
+
+    buffer.writeln('🌸 *$store* 🌸');
+    buffer.writeln('📑 *كشف حساب عميلة*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('👤 *العميلة:* ${customer.name}');
+    buffer.writeln('📱 *الهاتف:* ${customer.phone}');
+    buffer.writeln('📅 *تاريخ الكشف:* ${_formatDate(DateTime.now())}');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('*سجل الطلبيات:*');
+
+    Money totalOrders = Money.zero(customer.defaultCurrency);
+    Money totalPaid = Money.zero(customer.defaultCurrency);
+    Money totalRemaining = Money.zero(customer.defaultCurrency);
+
+    if (orders.isEmpty) {
+      buffer.writeln('لا توجد أي طلبيات مسجلة حتى الآن.');
+    } else {
+      for (final order in orders) {
+        if (order.totalAmount.currency == customer.defaultCurrency) {
+          totalOrders = totalOrders + order.totalAmount;
+          totalPaid = totalPaid + order.paidAmount;
+          totalRemaining = totalRemaining + order.remainingAmount;
+        }
+
+        buffer.writeln('• *طلبية #${order.orderNumber}* (${_formatDate(order.createdAt)})');
+        buffer.writeln('  الإجمالي: ${order.totalAmount.format()} | المدفوع: ${order.paidAmount.format()}');
+        buffer.writeln('  الحالة: ${order.executionStatus.labelAr} | السداد: ${order.paymentStatus.labelAr}');
+      }
+    }
+
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📊 *الملخص المالي العام:*');
+    buffer.writeln('💰 *إجمالي المشتريات:* ${totalOrders.format()}');
+    buffer.writeln('💳 *إجمالي المسدد:* ${totalPaid.format()}');
+
+    if (totalRemaining.isZero) {
+      buffer.writeln('✅ *الرصيد المتبقي:* الحساب مسدد بالكامل 0');
+    } else {
+      buffer.writeln('⏳ *المتبقي المطلوب سداده:* ${totalRemaining.format()}');
+    }
+
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln(footer);
 
     return buffer.toString();
   }

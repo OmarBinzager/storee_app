@@ -11,6 +11,7 @@ import '../features/orders/presentation/bloc/order_bloc.dart';
 import '../features/purchases/presentation/cubit/purchase_cubit.dart';
 import '../features/reports/presentation/cubit/reports_cubit.dart';
 import '../features/wallets/presentation/cubit/wallet_cubit.dart';
+import '../features/settings/presentation/cubit/settings_cubit.dart';
 import 'router/app_router.dart';
 import 'service_locator.dart';
 
@@ -44,6 +45,9 @@ class StoreeApp extends StatelessWidget {
         ),
         BlocProvider<LicenseCubit>(
           create: (_) => sl<LicenseCubit>(),
+        ),
+        BlocProvider<SettingsCubit>(
+          create: (_) => sl<SettingsCubit>(),
         ),
       ],
       child: MaterialApp.router(

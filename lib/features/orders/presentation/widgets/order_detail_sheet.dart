@@ -11,6 +11,8 @@ import '../../../../core/widgets/storee_card.dart';
 import '../../../customers/presentation/cubit/customer_cubit.dart';
 import '../../../customers/presentation/cubit/customer_state.dart';
 import '../../../wallets/presentation/widgets/record_payment_dialog.dart';
+import '../../../settings/presentation/cubit/settings_cubit.dart';
+import '../../../settings/presentation/cubit/settings_state.dart';
 import '../../domain/entities/customer_order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
@@ -231,7 +233,14 @@ class OrderDetailSheet extends StatelessWidget {
                       label: 'إرسال الفاتورة عبر واتساب',
                       icon: Icons.chat_bubble_outline_rounded,
                       onPressed: () {
-                        final invoice = WhatsAppService.formatOrderInvoice(order: order);
+                        final settingsState = context.read<SettingsCubit>().state;
+                        final storeName = settingsState is SettingsLoaded ? settingsState.profile.storeName : null;
+                        final footer = settingsState is SettingsLoaded ? settingsState.profile.customThankYou : null;
+                        final invoice = WhatsAppService.formatOrderInvoice(
+                          order: order,
+                          storeName: storeName,
+                          footerMessage: footer,
+                        );
                         WhatsAppService.launchWhatsApp(phone: customerPhone, text: invoice);
                       },
                     ),

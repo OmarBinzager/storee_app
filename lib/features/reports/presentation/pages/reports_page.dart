@@ -7,7 +7,10 @@ import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_card.dart';
+import 'package:flutter/services.dart';
 import '../../domain/entities/financial_report.dart';
+import '../../../settings/presentation/cubit/settings_cubit.dart';
+import '../../../settings/presentation/cubit/settings_state.dart';
 import '../cubit/reports_cubit.dart';
 import '../cubit/reports_state.dart';
 
@@ -27,6 +30,16 @@ class _ReportsPageState extends State<ReportsPage> {
       appBar: AppBar(
         title: const Text(AppStrings.navReports),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'مشاركة التقرير المالي',
+            onPressed: () {
+              final state = context.read<ReportsCubit>().state;
+              if (state is ReportsLoaded) {
+                _shareFinancialReport(context, state.currentReport);
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'تحديث التقارير',
@@ -311,6 +324,50 @@ class _ReportsPageState extends State<ReportsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _shareFinancialReport(BuildContext context, FinancialReport report) {
+    final settingsState = context.read<SettingsCubit>().state;
+    final storeName = settingsState is SettingsLoaded ? settingsState.profile.storeName : 'ستوري بوتيك';
+    final now = DateTime.now();
+    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    final buffer = StringBuffer();
+    buffer.writeln('🌸 *$storeName* 🌸');
+    buffer.writeln('📊 *التقرير المالي وصافي الأرباح*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📅 *التاريخ:* $dateStr');
+    buffer.writeln('💱 *العملة:* ${report.currency.nameAr} (${report.currency.code})');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📈 *المبيعات والطلبيات:*');
+    buffer.writeln('• إجمالي المبيعات: ${report.totalSales.format()}');
+    buffer.writeln('• عدد الطلبات المسلمة: ${report.deliveredOrdersCount} من أصل ${report.totalOrdersCount}');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('📉 *التكاليف والمصاريف:*');
+    buffer.writeln('• تكلفة البضاعة (COGS): ${report.totalCogs.format()}');
+    buffer.writeln('• الشحن والرسوم الموزعة: ${report.totalAllocatedShipping.format()}');
+    buffer.writeln('• مجمل الربح التجاري: ${report.grossProfit.format()}');
+    buffer.writeln('• المصاريف التشغيلية: ${report.totalOperatingExpenses.format()}');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    final profitEmoji = report.netProfit.amountMinor >= 0 ? '🟢' : '🔴';
+    buffer.writeln('$profitEmoji *صافي الربح الفعلي:* ${report.netProfit.format()}');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('💳 *المحصل نقداً في الخزنات:* ${report.totalCollectedPayments.format()}');
+    buffer.writeln('⏳ *المتبقي ديون لدى العميلات:* ${report.totalReceivables.format()}');
+    if (!report.totalPersonalWithdrawals.isZero) {
+      buffer.writeln('👛 *مسحوبات المالك الشخصية (معزولة):* ${report.totalPersonalWithdrawals.format()}');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('تم التوليد آلياً عبر تطبيق ستوري 📱✨');
+
+    final text = buffer.toString();
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم نسخ نص التقرير المالي بنجاح لمشاركته عبر واتساب أو الرسائل 📋'),
+        backgroundColor: AppColors.success,
       ),
     );
   }

@@ -32,6 +32,9 @@ import '../features/wallets/data/datasources/wallet_local_datasource.dart';
 import '../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../features/wallets/domain/repositories/wallet_repository.dart';
 import '../features/wallets/presentation/cubit/wallet_cubit.dart';
+import '../features/settings/data/repositories/settings_repository_impl.dart';
+import '../features/settings/domain/repositories/settings_repository.dart';
+import '../features/settings/presentation/cubit/settings_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -60,6 +63,7 @@ Future<void> initServiceLocator({AppDatabase? database, SharedPreferences? prefe
   sl.registerLazySingleton<ReportsRepository>(() => ReportsRepositoryImpl(sl<ReportsLocalDataSource>()));
   sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl<BackupLocalDataSource>()));
   sl.registerLazySingleton<LicenseRepository>(() => LicenseRepositoryImpl(sl<LicenseLocalDataSource>()));
+  sl.registerLazySingleton<SettingsRepository>(() => SettingsRepositoryImpl(sl<SharedPreferences>()));
 
   // Domain Services
   sl.registerLazySingleton<BatchCostAllocator>(() => const BatchCostAllocator());
@@ -77,4 +81,5 @@ Future<void> initServiceLocator({AppDatabase? database, SharedPreferences? prefe
   sl.registerFactory<ReportsCubit>(() => ReportsCubit(sl<ReportsRepository>())..loadReports());
   sl.registerFactory<BackupCubit>(() => BackupCubit(sl<BackupRepository>())..loadBackups());
   sl.registerFactory<LicenseCubit>(() => LicenseCubit(sl<LicenseRepository>())..checkLicense());
+  sl.registerFactory<SettingsCubit>(() => SettingsCubit(sl<SettingsRepository>())..loadSettings());
 }

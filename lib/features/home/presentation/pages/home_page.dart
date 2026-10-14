@@ -9,6 +9,7 @@ import '../../../../core/widgets/storee_card.dart';
 import '../../../backup/presentation/pages/backup_page.dart';
 import '../../../licensing/presentation/pages/license_page.dart';
 import '../../../orders/presentation/widgets/order_detail_sheet.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 
@@ -44,6 +45,15 @@ class HomePage extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const BackupPage()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'إعدادات وهوية المتجر',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
             },
           ),

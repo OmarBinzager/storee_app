@@ -13,6 +13,8 @@ import '../../../orders/presentation/bloc/order_bloc.dart';
 import '../../../orders/presentation/bloc/order_state.dart';
 import '../../../orders/presentation/widgets/add_order_sheet.dart';
 import '../../../orders/presentation/widgets/order_detail_sheet.dart';
+import '../../../settings/presentation/cubit/settings_cubit.dart';
+import '../../../settings/presentation/cubit/settings_state.dart';
 
 class CustomerDetailSheet extends StatelessWidget {
   final Customer customer;
@@ -174,6 +176,32 @@ class CustomerDetailSheet extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: AppDimensions.space8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      shape: RoundedRectangleBorder(borderRadius: AppDimensions.roundedMedium),
+                    ),
+                    icon: const Icon(Icons.receipt_outlined, size: 18, color: AppColors.primary),
+                    label: const Text('مشاركة كشف الحساب عبر واتساب'),
+                    onPressed: () {
+                      final settingsState = context.read<SettingsCubit>().state;
+                      final storeName = settingsState is SettingsLoaded ? settingsState.profile.storeName : null;
+                      final footer = settingsState is SettingsLoaded ? settingsState.profile.customThankYou : null;
+                      final statement = WhatsAppService.formatCustomerStatement(
+                        customer: customer,
+                        orders: customerOrders,
+                        storeName: storeName,
+                        footerMessage: footer,
+                      );
+                      WhatsAppService.launchWhatsApp(phone: customer.phone, text: statement);
+                    },
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.space20),
 

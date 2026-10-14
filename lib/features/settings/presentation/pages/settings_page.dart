@@ -9,6 +9,9 @@ import '../../../../core/widgets/storee_text_field.dart';
 import '../../domain/entities/store_profile.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
+import '../../../security/presentation/cubit/security_cubit.dart';
+import '../../../security/presentation/cubit/security_state.dart';
+import '../../../security/presentation/widgets/set_pin_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -195,6 +198,61 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: AppDimensions.space24),
+
+                  // Security & App Lock
+                  Text('الأمان وقفل التطبيق', style: AppTextStyles.subtitleMedium),
+                  const SizedBox(height: AppDimensions.space8),
+                  BlocBuilder<SecurityCubit, SecurityState>(
+                    builder: (context, securityState) {
+                      final isPinEnabled = securityState is SecurityUnlocked && securityState.isPinEnabled;
+
+                      return StoreeCard(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(AppDimensions.space8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondary,
+                                    borderRadius: AppDimensions.roundedSmall,
+                                  ),
+                                  child: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 22),
+                                ),
+                                const SizedBox(width: AppDimensions.space12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('قفل التطبيق برمز مرور (PIN)', style: AppTextStyles.subtitleMedium),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      isPinEnabled ? 'مفعّل (رمز مكون من 4 أرقام)' : 'غير مفعّل',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: isPinEnabled ? AppColors.success : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Switch.adaptive(
+                              value: isPinEnabled,
+                              activeTrackColor: AppColors.primary,
+                              onChanged: (enabled) {
+                                if (enabled) {
+                                  SetPinDialog.show(context);
+                                } else {
+                                  context.read<SecurityCubit>().disablePin();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: AppDimensions.space24),
 

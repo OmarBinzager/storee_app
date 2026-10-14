@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
+import '../../features/security/presentation/cubit/security_cubit.dart';
+import '../../features/security/presentation/cubit/security_state.dart';
+import '../../features/security/presentation/pages/pin_lock_page.dart';
 import '../../core/theme/text_styles.dart';
 import '../../features/customers/presentation/pages/customers_page.dart';
 import '../../features/customers/presentation/widgets/add_customer_dialog.dart';
@@ -170,49 +174,57 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showQuickAddSheet(context),
-        tooltip: AppStrings.quickAdd,
-        child: const Icon(Icons.add_rounded, size: 28),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: AppStrings.navHome,
+    return BlocBuilder<SecurityCubit, SecurityState>(
+      builder: (context, securityState) {
+        if (securityState is SecurityLocked) {
+          return const PinLockPage();
+        }
+
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: _pages,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long_rounded),
-            label: AppStrings.navOrders,
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showQuickAddSheet(context),
+            tooltip: AppStrings.quickAdd,
+            child: const Icon(Icons.add_rounded, size: 28),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.people_outline_rounded),
-            selectedIcon: Icon(Icons.people_rounded),
-            label: AppStrings.navCustomers,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (index) {
+              setState(() => _currentIndex = index);
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: AppStrings.navHome,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long_rounded),
+                label: AppStrings.navOrders,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.people_outline_rounded),
+                selectedIcon: Icon(Icons.people_rounded),
+                label: AppStrings.navCustomers,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                label: AppStrings.navWallets,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.bar_chart_outlined),
+                selectedIcon: Icon(Icons.bar_chart_rounded),
+                label: AppStrings.navReports,
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: AppStrings.navWallets,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart_rounded),
-            label: AppStrings.navReports,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

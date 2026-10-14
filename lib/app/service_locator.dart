@@ -35,6 +35,10 @@ import '../features/wallets/presentation/cubit/wallet_cubit.dart';
 import '../features/settings/data/repositories/settings_repository_impl.dart';
 import '../features/settings/domain/repositories/settings_repository.dart';
 import '../features/settings/presentation/cubit/settings_cubit.dart';
+import '../features/security/data/datasources/security_local_datasource.dart';
+import '../features/security/data/repositories/security_repository_impl.dart';
+import '../features/security/domain/repositories/security_repository.dart';
+import '../features/security/presentation/cubit/security_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -54,6 +58,7 @@ Future<void> initServiceLocator({AppDatabase? database, SharedPreferences? prefe
   sl.registerLazySingleton<ReportsLocalDataSource>(() => ReportsLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<BackupLocalDataSource>(() => BackupLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<LicenseLocalDataSource>(() => LicenseLocalDataSourceImpl(sl<SharedPreferences>()));
+  sl.registerLazySingleton<SecurityLocalDataSource>(() => SecurityLocalDataSourceImpl(sl<SharedPreferences>()));
 
   // Repositories
   sl.registerLazySingleton<CustomerRepository>(() => CustomerRepositoryImpl(sl<CustomerLocalDataSource>()));
@@ -64,6 +69,7 @@ Future<void> initServiceLocator({AppDatabase? database, SharedPreferences? prefe
   sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl<BackupLocalDataSource>()));
   sl.registerLazySingleton<LicenseRepository>(() => LicenseRepositoryImpl(sl<LicenseLocalDataSource>()));
   sl.registerLazySingleton<SettingsRepository>(() => SettingsRepositoryImpl(sl<SharedPreferences>()));
+  sl.registerLazySingleton<SecurityRepository>(() => SecurityRepositoryImpl(sl<SecurityLocalDataSource>()));
 
   // Domain Services
   sl.registerLazySingleton<BatchCostAllocator>(() => const BatchCostAllocator());
@@ -82,4 +88,5 @@ Future<void> initServiceLocator({AppDatabase? database, SharedPreferences? prefe
   sl.registerFactory<BackupCubit>(() => BackupCubit(sl<BackupRepository>())..loadBackups());
   sl.registerFactory<LicenseCubit>(() => LicenseCubit(sl<LicenseRepository>())..checkLicense());
   sl.registerFactory<SettingsCubit>(() => SettingsCubit(sl<SettingsRepository>())..loadSettings());
+  sl.registerLazySingleton<SecurityCubit>(() => SecurityCubit(sl<SecurityRepository>())..checkSecurityStatus());
 }

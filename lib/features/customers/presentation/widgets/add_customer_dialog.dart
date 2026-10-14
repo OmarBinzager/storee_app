@@ -68,25 +68,36 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
         return;
       }
 
-      final contact = await FlutterContacts.native.showPicker();
+      final contact = await FlutterContacts.native.showPicker(
+        properties: ContactProperties.all,
+      );
       if (contact == null) return;
 
-      // Fetch full contact to ensure phones list is loaded
-      final fullContact = (contact.id != null)
-          ? (await FlutterContacts.get(contact.id!) ?? contact)
-          : contact;
+      // Fetch full contact with all properties to ensure phones list is loaded
+      Contact? fullContact;
+      if (contact.id != null) {
+        fullContact = await FlutterContacts.get(
+          contact.id!,
+          properties: ContactProperties.all,
+        );
+      }
+      final resolvedContact = fullContact ?? contact;
 
-      String name = (fullContact.displayName ?? '').trim();
-      if (name.isEmpty && fullContact.name != null) {
-        final first = (fullContact.name?.first ?? '').trim();
-        final last = (fullContact.name?.last ?? '').trim();
+      String name = (resolvedContact.displayName ?? '').trim();
+      if (name.isEmpty && resolvedContact.name != null) {
+        final first = (resolvedContact.name?.first ?? '').trim();
+        final last = (resolvedContact.name?.last ?? '').trim();
         name = '$first $last'.trim();
       }
 
+      final phones = resolvedContact.phones.isNotEmpty
+          ? resolvedContact.phones
+          : contact.phones;
+
       String phone = '';
-      if (fullContact.phones.isNotEmpty) {
-        if (fullContact.phones.length == 1) {
-          phone = fullContact.phones.first.number;
+      if (phones.isNotEmpty) {
+        if (phones.length == 1) {
+          phone = phones.first.number;
         } else {
           if (mounted) {
             final chosen = await showModalBottomSheet<String>(
@@ -107,11 +118,11 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                       ),
                     ),
                     const Divider(height: 1),
-                    ...fullContact.phones.map(
+                    ...phones.map(
                       (p) => ListTile(
                         leading: const Icon(Icons.phone_rounded, color: AppColors.primary),
                         title: Text(p.number, textDirection: TextDirection.ltr),
-                        subtitle: Text(p.label.toString()),
+                        subtitle: Text(p.label.customLabel ?? p.label.label.name),
                         onTap: () => Navigator.pop(ctx, p.number),
                       ),
                     ),
@@ -119,7 +130,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                 ),
               ),
             );
-            phone = chosen ?? fullContact.phones.first.number;
+            phone = chosen ?? phones.first.number;
           }
         }
       }

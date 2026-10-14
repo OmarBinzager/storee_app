@@ -23,6 +23,11 @@ import '../features/reports/data/datasources/reports_local_datasource.dart';
 import '../features/reports/data/repositories/reports_repository_impl.dart';
 import '../features/reports/domain/repositories/reports_repository.dart';
 import '../features/reports/presentation/cubit/reports_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../features/licensing/data/datasources/license_local_datasource.dart';
+import '../features/licensing/data/repositories/license_repository_impl.dart';
+import '../features/licensing/domain/repositories/license_repository.dart';
+import '../features/licensing/presentation/cubit/license_cubit.dart';
 import '../features/wallets/data/datasources/wallet_local_datasource.dart';
 import '../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../features/wallets/domain/repositories/wallet_repository.dart';
@@ -30,9 +35,13 @@ import '../features/wallets/presentation/cubit/wallet_cubit.dart';
 
 final sl = GetIt.instance;
 
-Future<void> initServiceLocator({AppDatabase? database}) async {
+Future<void> initServiceLocator({AppDatabase? database, SharedPreferences? preferences}) async {
   // Core Database
   sl.registerLazySingleton<AppDatabase>(() => database ?? AppDatabase());
+
+  // SharedPreferences
+  final prefs = preferences ?? await SharedPreferences.getInstance();
+  sl.registerLazySingleton<SharedPreferences>(() => prefs);
 
   // Data Sources
   sl.registerLazySingleton<CustomerLocalDataSource>(() => CustomerLocalDataSourceImpl(sl<AppDatabase>()));
@@ -41,6 +50,7 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerLazySingleton<PurchaseLocalDataSource>(() => PurchaseLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<ReportsLocalDataSource>(() => ReportsLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<BackupLocalDataSource>(() => BackupLocalDataSourceImpl(sl<AppDatabase>()));
+  sl.registerLazySingleton<LicenseLocalDataSource>(() => LicenseLocalDataSourceImpl(sl<SharedPreferences>()));
 
   // Repositories
   sl.registerLazySingleton<CustomerRepository>(() => CustomerRepositoryImpl(sl<CustomerLocalDataSource>()));
@@ -49,6 +59,7 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerLazySingleton<PurchaseRepository>(() => PurchaseRepositoryImpl(sl<PurchaseLocalDataSource>()));
   sl.registerLazySingleton<ReportsRepository>(() => ReportsRepositoryImpl(sl<ReportsLocalDataSource>()));
   sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl<BackupLocalDataSource>()));
+  sl.registerLazySingleton<LicenseRepository>(() => LicenseRepositoryImpl(sl<LicenseLocalDataSource>()));
 
   // Domain Services
   sl.registerLazySingleton<BatchCostAllocator>(() => const BatchCostAllocator());
@@ -65,4 +76,5 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerFactory<PurchaseCubit>(() => PurchaseCubit(sl<PurchaseRepository>())..loadBatches());
   sl.registerFactory<ReportsCubit>(() => ReportsCubit(sl<ReportsRepository>())..loadReports());
   sl.registerFactory<BackupCubit>(() => BackupCubit(sl<BackupRepository>())..loadBackups());
+  sl.registerFactory<LicenseCubit>(() => LicenseCubit(sl<LicenseRepository>())..checkLicense());
 }

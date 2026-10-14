@@ -1,12 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storee/app/app.dart';
 import 'package:storee/app/service_locator.dart';
 import 'package:storee/core/database/app_database.dart';
 
 void main() {
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
     await sl.reset();
-    await initServiceLocator(database: AppDatabase.inMemory());
+    await initServiceLocator(
+      database: AppDatabase.inMemory(),
+      preferences: prefs,
+    );
   });
 
   testWidgets('StoreeApp launches successfully with Arabic navigation', (WidgetTester tester) async {

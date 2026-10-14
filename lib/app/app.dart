@@ -6,6 +6,7 @@ import '../core/theme/app_theme.dart';
 import '../features/backup/presentation/cubit/backup_cubit.dart';
 import '../features/customers/presentation/cubit/customer_cubit.dart';
 import '../features/home/presentation/cubit/home_cubit.dart';
+import '../features/licensing/presentation/cubit/license_cubit.dart';
 import '../features/orders/presentation/bloc/order_bloc.dart';
 import '../features/purchases/presentation/cubit/purchase_cubit.dart';
 import '../features/reports/presentation/cubit/reports_cubit.dart';
@@ -40,6 +41,9 @@ class StoreeApp extends StatelessWidget {
         ),
         BlocProvider<BackupCubit>(
           create: (_) => sl<BackupCubit>(),
+        ),
+        BlocProvider<LicenseCubit>(
+          create: (_) => sl<LicenseCubit>(),
         ),
       ],
       child: MaterialApp.router(

@@ -7,6 +7,7 @@ import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
 import '../../../backup/presentation/pages/backup_page.dart';
+import '../../../licensing/presentation/pages/license_page.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 
@@ -27,6 +28,15 @@ class HomePage extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.workspace_premium_outlined),
+            tooltip: 'إدارة الترخيص والاشتراك',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StoreeLicensePage()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.cloud_sync_outlined),
             tooltip: 'النسخ الاحتياطي والاستعادة',

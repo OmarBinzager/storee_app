@@ -15,6 +15,7 @@ class TransferFundsDialog extends StatefulWidget {
   const TransferFundsDialog({super.key});
 
   static Future<bool?> show(BuildContext context) {
+    final walletCubit = context.read<WalletCubit>();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -23,7 +24,7 @@ class TransferFundsDialog extends StatefulWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
       ),
       builder: (_) => BlocProvider.value(
-        value: context.read<WalletCubit>(),
+        value: walletCubit,
         child: const TransferFundsDialog(),
       ),
     );

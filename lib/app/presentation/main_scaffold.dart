@@ -42,11 +42,11 @@ class _MainScaffoldState extends State<MainScaffold> {
     ReportsPage(),
   ];
 
-  void _showQuickAddSheet(BuildContext context) {
+  void _showQuickAddSheet(BuildContext rootContext) {
     showResponsiveModalSheet(
-      context: context,
+      context: rootContext,
       maxWidth: 500,
-      builder: (ctx) {
+      builder: (sheetCtx) {
         return Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.space20,
@@ -61,7 +61,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               Text(AppStrings.quickAdd, style: AppTextStyles.headingSmall),
               const SizedBox(height: AppDimensions.space16),
               LayoutBuilder(
-                builder: (context, constraints) {
+                builder: (_, constraints) {
                   final cols = constraints.maxWidth < 340 ? 2 : (constraints.maxWidth >= 480 ? 4 : 3);
                   final itemWidth = ((constraints.maxWidth - (cols - 1) * AppDimensions.space12) / cols).floorToDouble();
 
@@ -75,8 +75,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                         title: AppStrings.newOrder,
                         color: AppColors.primary,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          AddOrderSheet.show(context);
+                          Navigator.pop(sheetCtx);
+                          AddOrderSheet.show(rootContext);
                         },
                       ),
                       _buildActionItem(
@@ -85,8 +85,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                         title: AppStrings.newCustomer,
                         color: AppColors.info,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          AddCustomerDialog.show(context);
+                          Navigator.pop(sheetCtx);
+                          AddCustomerDialog.show(rootContext);
                         },
                       ),
                       _buildActionItem(
@@ -95,8 +95,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                         title: AppStrings.newPayment,
                         color: AppColors.success,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          RecordPaymentDialog.show(context);
+                          Navigator.pop(sheetCtx);
+                          RecordPaymentDialog.show(rootContext);
                         },
                       ),
                       _buildActionItem(
@@ -105,8 +105,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                         title: AppStrings.newExpense,
                         color: AppColors.warning,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          RecordExpenseDialog.show(context);
+                          Navigator.pop(sheetCtx);
+                          RecordExpenseDialog.show(rootContext);
                         },
                       ),
                       _buildActionItem(
@@ -115,8 +115,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                         title: AppStrings.newTransfer,
                         color: AppColors.primaryLight,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          TransferFundsDialog.show(context);
+                          Navigator.pop(sheetCtx);
+                          TransferFundsDialog.show(rootContext);
                         },
                       ),
                       _buildActionItem(
@@ -125,8 +125,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                         title: AppStrings.newPurchaseBatch,
                         color: AppColors.primaryDark,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          CreatePurchaseBatchSheet.show(context);
+                          Navigator.pop(sheetCtx);
+                          CreatePurchaseBatchSheet.show(rootContext);
                         },
                       ),
                     ],

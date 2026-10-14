@@ -62,4 +62,19 @@ abstract final class AppStrings {
   // Warnings & Rule Messages
   static const String currencyMismatchError = 'لا يمكن جمع أو طرح مبالغ من عملات مختلفة دون تحويل صريح.';
   static const String zeroOrNegativeError = 'المبلغ يجب أن يكون أكبر من الصفر.';
+
+  // Onboarding & Splash
+  static const String splashTagline = 'المساعد المالي والإداري الأذكى لتاجرات البوتيك';
+  static const String onboardingSkip = 'تخطي';
+  static const String onboardingNext = 'التالي';
+  static const String onboardingStart = 'ابدئي الآن';
+  
+  static const String onboardingTitle1 = 'نظّمي طلبات عميلاتك بدقة';
+  static const String onboardingDesc1 = 'سجّلي القياسات والألوان، وتابعي حالات التنفيذ والشحن خطوة بخطوة بكل سلاسة وهدوء.';
+
+  static const String onboardingTitle2 = 'خزناتك وأموالك.. تحت السيطرة';
+  static const String onboardingDesc2 = 'إدارة مستقلة لحساباتك (كاش، بنوك، محافظ) مع عزل تام للعملات واحتساب صافي الأرباح الحقيقية.';
+
+  static const String onboardingTitle3 = 'شراء جماعي وحسابات عادلة';
+  static const String onboardingDesc3 = 'اجمعي فواتير الموردين ووزعي تكاليف الشحن والرسوم بعدالة بين العميلات دون أخطاء حسابية.';
 }

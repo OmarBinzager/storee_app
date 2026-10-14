@@ -35,6 +35,9 @@ class RecordPaymentDialog extends StatefulWidget {
     Customer? preselectedCustomer,
     CustomerOrder? preselectedOrder,
   }) {
+    final customerCubit = context.read<CustomerCubit>();
+    final orderBloc = context.read<OrderBloc>();
+    final walletCubit = context.read<WalletCubit>();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -44,9 +47,9 @@ class RecordPaymentDialog extends StatefulWidget {
       ),
       builder: (_) => MultiBlocProvider(
         providers: [
-          BlocProvider.value(value: context.read<CustomerCubit>()),
-          BlocProvider.value(value: context.read<OrderBloc>()),
-          BlocProvider.value(value: context.read<WalletCubit>()),
+          BlocProvider.value(value: customerCubit),
+          BlocProvider.value(value: orderBloc),
+          BlocProvider.value(value: walletCubit),
         ],
         child: RecordPaymentDialog(
           preselectedCustomer: preselectedCustomer,

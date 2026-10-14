@@ -23,6 +23,8 @@ class AddOrderSheet extends StatefulWidget {
   const AddOrderSheet({super.key});
 
   static Future<bool?> show(BuildContext context) {
+    final customerCubit = context.read<CustomerCubit>();
+    final orderBloc = context.read<OrderBloc>();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -32,8 +34,8 @@ class AddOrderSheet extends StatefulWidget {
       ),
       builder: (_) => MultiBlocProvider(
         providers: [
-          BlocProvider.value(value: context.read<CustomerCubit>()),
-          BlocProvider.value(value: context.read<OrderBloc>()),
+          BlocProvider.value(value: customerCubit),
+          BlocProvider.value(value: orderBloc),
         ],
         child: const AddOrderSheet(),
       ),
@@ -286,10 +288,20 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('إجمالي الطلبية المتوقع:', style: AppTextStyles.subtitleLarge),
-                    Text(
-                      _calculateTotal().format(),
-                      style: AppTextStyles.moneyLarge.copyWith(color: AppColors.primary),
+                    Expanded(
+                      child: Text(
+                        'إجمالي الطلبية المتوقع:',
+                        style: AppTextStyles.subtitleLarge,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.space8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _calculateTotal().format(),
+                        style: AppTextStyles.moneyLarge.copyWith(color: AppColors.primary),
+                      ),
                     ),
                   ],
                 ),

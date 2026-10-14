@@ -25,6 +25,9 @@ class CreatePurchaseBatchSheet extends StatefulWidget {
   const CreatePurchaseBatchSheet({super.key});
 
   static Future<bool?> show(BuildContext context) {
+    final purchaseCubit = context.read<PurchaseCubit>();
+    final orderBloc = context.read<OrderBloc>();
+    final walletCubit = context.read<WalletCubit>();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -34,9 +37,9 @@ class CreatePurchaseBatchSheet extends StatefulWidget {
       ),
       builder: (_) => MultiBlocProvider(
         providers: [
-          BlocProvider.value(value: context.read<PurchaseCubit>()),
-          BlocProvider.value(value: context.read<OrderBloc>()),
-          BlocProvider.value(value: context.read<WalletCubit>()),
+          BlocProvider.value(value: purchaseCubit),
+          BlocProvider.value(value: orderBloc),
+          BlocProvider.value(value: walletCubit),
         ],
         child: const CreatePurchaseBatchSheet(),
       ),
@@ -332,8 +335,18 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('إجمالي الفاتورة المطلوب دفعها:', style: AppTextStyles.subtitleLarge),
-                              Text(totalBatchCost.format(), style: AppTextStyles.moneyLarge),
+                              Expanded(
+                                child: Text(
+                                  'إجمالي الفاتورة المطلوب دفعها:',
+                                  style: AppTextStyles.subtitleLarge,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: AppDimensions.space8),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(totalBatchCost.format(), style: AppTextStyles.moneyLarge),
+                              ),
                             ],
                           ),
                           const Divider(height: AppDimensions.space16),

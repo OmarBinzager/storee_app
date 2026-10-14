@@ -6,7 +6,7 @@ import 'package:storee/core/database/app_database.dart';
 
 void main() {
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarding_completed': true});
     final prefs = await SharedPreferences.getInstance();
     await sl.reset();
     await initServiceLocator(
@@ -17,10 +17,13 @@ void main() {
 
   testWidgets('StoreeApp launches successfully with Arabic navigation', (WidgetTester tester) async {
     await tester.pumpWidget(const StoreeApp());
+    // Splash screen has a delay and animation
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 3000));
     await tester.pumpAndSettle();
 
     // Verify main branding and tabs are rendered
-    expect(find.text('ستوري'), findsOneWidget);
+    expect(find.text('ستوري'), findsWidgets);
     expect(find.text('الرئيسية'), findsOneWidget);
     expect(find.text('الطلبات'), findsOneWidget);
     expect(find.text('العميلات'), findsOneWidget);

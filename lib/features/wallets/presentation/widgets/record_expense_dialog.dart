@@ -20,6 +20,7 @@ class RecordExpenseDialog extends StatefulWidget {
   });
 
   static Future<bool?> show(BuildContext context, {bool isPersonalWithdrawal = false}) {
+    final walletCubit = context.read<WalletCubit>();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -28,7 +29,7 @@ class RecordExpenseDialog extends StatefulWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
       ),
       builder: (_) => BlocProvider.value(
-        value: context.read<WalletCubit>(),
+        value: walletCubit,
         child: RecordExpenseDialog(initialIsPersonalWithdrawal: isPersonalWithdrawal),
       ),
     );

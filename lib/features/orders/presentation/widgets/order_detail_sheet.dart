@@ -24,6 +24,8 @@ class OrderDetailSheet extends StatelessWidget {
   const OrderDetailSheet({super.key, required this.order});
 
   static Future<void> show(BuildContext context, CustomerOrder order) {
+    final orderBloc = context.read<OrderBloc>();
+    final customerCubit = context.read<CustomerCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -33,8 +35,8 @@ class OrderDetailSheet extends StatelessWidget {
       ),
       builder: (_) => MultiBlocProvider(
         providers: [
-          BlocProvider.value(value: context.read<OrderBloc>()),
-          BlocProvider.value(value: context.read<CustomerCubit>()),
+          BlocProvider.value(value: orderBloc),
+          BlocProvider.value(value: customerCubit),
         ],
         child: OrderDetailSheet(order: order),
       ),

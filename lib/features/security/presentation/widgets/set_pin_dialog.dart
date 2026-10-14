@@ -9,11 +9,12 @@ class SetPinDialog extends StatefulWidget {
   const SetPinDialog({super.key});
 
   static Future<bool?> show(BuildContext context) {
+    final securityCubit = context.read<SecurityCubit>();
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => BlocProvider.value(
-        value: context.read<SecurityCubit>(),
+        value: securityCubit,
         child: const SetPinDialog(),
       ),
     );

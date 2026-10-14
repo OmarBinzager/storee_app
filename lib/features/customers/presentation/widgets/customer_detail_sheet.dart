@@ -22,6 +22,7 @@ class CustomerDetailSheet extends StatelessWidget {
   const CustomerDetailSheet({super.key, required this.customer});
 
   static void show(BuildContext context, Customer customer) {
+    final orderBloc = context.read<OrderBloc>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -30,7 +31,7 @@ class CustomerDetailSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
       ),
       builder: (_) => BlocProvider.value(
-        value: context.read<OrderBloc>(),
+        value: orderBloc,
         child: CustomerDetailSheet(customer: customer),
       ),
     );

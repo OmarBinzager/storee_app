@@ -58,7 +58,23 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: AppDimensions.space20),
                   _buildSectionHeader('أحدث الطلبيات'),
                   const SizedBox(height: AppDimensions.space12),
-                  ...state.recentOrders.map((order) => _buildOrderTile(order)),
+                  if (state.recentOrders.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(AppDimensions.space16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppDimensions.roundedMedium,
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'لا توجد طلبيات بعد. اضغطي (+) لإنشاء أول طلبية.',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                      ),
+                    )
+                  else
+                    ...state.recentOrders.map((order) => _buildOrderTile(order)),
                   const SizedBox(height: AppDimensions.space32),
                 ],
               ),
@@ -187,6 +203,23 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildWalletsHorizontalList(HomeLoaded state) {
+    if (state.wallets.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(AppDimensions.space16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppDimensions.roundedMedium,
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Center(
+          child: Text(
+            'لا توجد خزنات مضافة بعد.',
+            style: AppTextStyles.bodySmall,
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 125,
       child: ListView.separated(

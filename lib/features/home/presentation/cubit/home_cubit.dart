@@ -2,118 +2,75 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../orders/domain/entities/customer_order.dart';
-import '../../../orders/domain/entities/order_item.dart';
-import '../../../wallets/domain/entities/wallet.dart';
+import '../../../orders/domain/repositories/order_repository.dart';
+import '../../../reports/domain/repositories/reports_repository.dart';
+import '../../../wallets/domain/repositories/wallet_repository.dart';
 import 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  HomeCubit() : super(HomeInitial());
+  final OrderRepository orderRepository;
+  final WalletRepository walletRepository;
+  final ReportsRepository reportsRepository;
 
-  void loadDashboard() {
+  HomeCubit({
+    required this.orderRepository,
+    required this.walletRepository,
+    required this.reportsRepository,
+  }) : super(HomeInitial());
+
+  Future<void> loadDashboard() async {
     emit(HomeLoading());
 
-    // Provide seed demonstration data based on Storee Yemen/SAR requirements
-    final sampleWallets = [
-      Wallet(
-        id: 'w1',
-        name: 'الكاش الشخصي',
-        type: WalletType.cash,
-        balances: {
-          'YER': Money.fromMajor(450000, Currency.yer),
-          'SAR': Money.fromMajor(1200, Currency.sar),
-        },
-      ),
-      Wallet(
-        id: 'w2',
-        name: 'محفظة جيب / ون كاش',
-        type: WalletType.electronicWallet,
-        balances: {
-          'YER': Money.fromMajor(280000, Currency.yer),
-          'SAR': Money.zero(Currency.sar),
-        },
-      ),
-      Wallet(
-        id: 'w3',
-        name: 'حساب بنك الكريمي',
-        type: WalletType.bankAccount,
-        balances: {
-          'YER': Money.fromMajor(950000, Currency.yer),
-          'SAR': Money.fromMajor(3400, Currency.sar),
-        },
-      ),
-    ];
+    final walletsResult = await walletRepository.getWallets();
+    final ordersResult = await orderRepository.getOrders();
+    final reportsResult = await reportsRepository.getAllCurrenciesSummary();
 
-    final sampleOrders = [
-      CustomerOrder(
-        id: 'ord-101',
-        customerId: 'cust-1',
-        customerName: 'فاطمة الكاف',
-        orderNumber: '#1042',
-        executionStatus: OrderExecutionStatus.readyToDeliver,
-        paymentStatus: OrderPaymentStatus.partial,
-        currency: Currency.sar,
-        items: [
-          OrderItem(
-            id: 'item-1',
-            orderId: 'ord-101',
-            title: 'فستان مخمل كحلي راقي',
-            size: 'L',
-            color: 'كحلي',
-            quantity: 1,
-            saleUnitPrice: Money.fromMajor(180, Currency.sar),
-            unitCost: Money.fromMajor(110, Currency.sar),
-            allocatedExtraCost: Money.fromMajor(15, Currency.sar),
-          ),
-        ],
-        paidAmount: Money.fromMajor(100, Currency.sar),
-        discountAmount: Money.zero(Currency.sar),
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        updatedAt: DateTime.now(),
-      ),
-      CustomerOrder(
-        id: 'ord-102',
-        customerId: 'cust-2',
-        customerName: 'منى باوزير',
-        orderNumber: '#1043',
-        executionStatus: OrderExecutionStatus.shipping,
-        paymentStatus: OrderPaymentStatus.paid,
-        currency: Currency.yer,
-        items: [
-          OrderItem(
-            id: 'item-2',
-            orderId: 'ord-102',
-            title: 'حقيبة يد جلدية بيج',
-            color: 'بيج',
-            quantity: 1,
-            saleUnitPrice: Money.fromMajor(32000, Currency.yer),
-            unitCost: Money.fromMajor(21000, Currency.yer),
-            allocatedExtraCost: Money.fromMajor(3000, Currency.yer),
-          ),
-        ],
-        paidAmount: Money.fromMajor(32000, Currency.yer),
-        discountAmount: Money.zero(Currency.yer),
-        createdAt: DateTime.now().subtract(const Duration(hours: 18)),
-        updatedAt: DateTime.now(),
-      ),
-    ];
+    final wallets = walletsResult.getOrElse(() => []);
+    final orders = ordersResult.getOrElse(() => []);
+    final reports = reportsResult.getOrElse(() => {});
 
-    final receivables = {
-      'SAR': Money.fromMajor(80, Currency.sar),
-      'YER': Money.fromMajor(45000, Currency.yer),
-    };
+    // Sort orders descending by createdAt
+    final sortedOrders = List<CustomerOrder>.from(orders)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final recentOrders = sortedOrders.take(5).toList();
 
-    final profits = {
-      'SAR': Money.fromMajor(55, Currency.sar),
-      'YER': Money.fromMajor(8000, Currency.yer),
-    };
+    int pendingCount = 0;
+    int readyCount = 0;
+
+    final Map<String, Money> receivablesByCurrency = {};
+    for (final c in Currency.values) {
+      receivablesByCurrency[c.code] = Money.zero(c);
+    }
+
+    for (final order in orders) {
+      if (order.executionStatus != OrderExecutionStatus.delivered &&
+          order.executionStatus != OrderExecutionStatus.cancelled) {
+        pendingCount++;
+      }
+      if (order.executionStatus == OrderExecutionStatus.readyToDeliver) {
+        readyCount++;
+      }
+
+      if (!order.remainingAmount.isZero &&
+          order.executionStatus != OrderExecutionStatus.cancelled) {
+        final current = receivablesByCurrency[order.currency.code] ?? Money.zero(order.currency);
+        receivablesByCurrency[order.currency.code] = current + order.remainingAmount;
+      }
+    }
+
+    final Map<String, Money> profitsByCurrency = {};
+    for (final c in Currency.values) {
+      final rep = reports[c.code];
+      profitsByCurrency[c.code] = rep?.netProfit ?? Money.zero(c);
+    }
 
     emit(HomeLoaded(
-      recentOrders: sampleOrders,
-      wallets: sampleWallets,
-      receivablesByCurrency: receivables,
-      profitsByCurrency: profits,
-      pendingOrdersCount: 4,
-      readyToDeliverCount: 2,
+      recentOrders: recentOrders,
+      wallets: wallets,
+      receivablesByCurrency: receivablesByCurrency,
+      profitsByCurrency: profitsByCurrency,
+      pendingOrdersCount: pendingCount,
+      readyToDeliverCount: readyCount,
     ));
   }
 }

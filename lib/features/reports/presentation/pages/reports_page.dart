@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -6,6 +7,9 @@ import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_card.dart';
+import '../../domain/entities/financial_report.dart';
+import '../cubit/reports_cubit.dart';
+import '../cubit/reports_state.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -22,60 +26,95 @@ class _ReportsPageState extends State<ReportsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.navReports),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'تحديث التقارير',
+            onPressed: () => context.read<ReportsCubit>().loadReports(currency: _selectedCurrency),
+          ),
+        ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppDimensions.space16),
+      body: BlocBuilder<ReportsCubit, ReportsState>(
+        builder: (context, state) {
+          if (state is ReportsLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is ReportsError) {
+            return Center(
+              child: Text(
+                state.message,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              ),
+            );
+          }
+
+          if (state is ReportsLoaded) {
+            final report = state.currentReport;
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<ReportsCubit>().loadReports(currency: _selectedCurrency);
+              },
+              child: ListView(
+                padding: const EdgeInsets.all(AppDimensions.space16),
+                children: [
+                  _buildCurrencySelector(state.selectedCurrency),
+                  const SizedBox(height: AppDimensions.space16),
+                  _buildNetProfitCalculationCard(report),
+                  const SizedBox(height: AppDimensions.space16),
+                  _buildFinancialSummaryCards(report),
+                  const SizedBox(height: AppDimensions.space16),
+                  _buildCashFlowAndReceivablesCards(report),
+                  const SizedBox(height: AppDimensions.space20),
+                  _buildNoticeCard(),
+                ],
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  Widget _buildCurrencySelector(Currency selected) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space16, vertical: AppDimensions.space8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppDimensions.roundedMedium,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildCurrencySelector(),
-          const SizedBox(height: AppDimensions.space16),
-          _buildFinancialSummaryCards(),
-          const SizedBox(height: AppDimensions.space20),
-          _buildNetProfitCalculationCard(),
-          const SizedBox(height: AppDimensions.space20),
-          _buildNoticeCard(),
+          Text('عرض أرقام عملة:', style: AppTextStyles.subtitleMedium),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<Currency>(
+              value: selected,
+              borderRadius: AppDimensions.roundedMedium,
+              items: Currency.values.map((curr) {
+                return DropdownMenuItem(
+                  value: curr,
+                  child: Text('${curr.nameAr} (${curr.code})', style: AppTextStyles.bodyMedium),
+                );
+              }).toList(),
+              onChanged: (curr) {
+                if (curr != null) {
+                  setState(() => _selectedCurrency = curr);
+                  context.read<ReportsCubit>().switchCurrency(curr);
+                }
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCurrencySelector() {
-    return Row(
-      children: [
-        Text('عرض تقارير عملة:', style: AppTextStyles.subtitleMedium),
-        const SizedBox(width: AppDimensions.space12),
-        DropdownButton<Currency>(
-          value: _selectedCurrency,
-          underline: const SizedBox.shrink(),
-          borderRadius: AppDimensions.roundedMedium,
-          items: Currency.values.map((curr) {
-            return DropdownMenuItem(
-              value: curr,
-              child: Text('${curr.nameAr} (${curr.code})', style: AppTextStyles.bodyMedium),
-            );
-          }).toList(),
-          onChanged: (curr) {
-            if (curr != null) {
-              setState(() => _selectedCurrency = curr);
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFinancialSummaryCards() {
-    final sales = _selectedCurrency == Currency.sar
-        ? Money.fromMajor(4500, Currency.sar)
-        : Money.fromMajor(1200000, Currency.yer);
-
-    final purchases = _selectedCurrency == Currency.sar
-        ? Money.fromMajor(3200, Currency.sar)
-        : Money.fromMajor(850000, Currency.yer);
-
-    final shippingFees = _selectedCurrency == Currency.sar
-        ? Money.fromMajor(350, Currency.sar)
-        : Money.fromMajor(95000, Currency.yer);
-
+  Widget _buildFinancialSummaryCards(FinancialReport report) {
     return Column(
       children: [
         Row(
@@ -83,18 +122,20 @@ class _ReportsPageState extends State<ReportsPage> {
             Expanded(
               child: _buildMetricTile(
                 title: 'إجمالي المبيعات',
-                money: sales,
+                money: report.totalSales,
                 color: AppColors.primary,
                 icon: Icons.point_of_sale_rounded,
+                subtitle: '${report.totalOrdersCount} طلبات (${report.deliveredOrdersCount} مسلّمة)',
               ),
             ),
             const SizedBox(width: AppDimensions.space12),
             Expanded(
               child: _buildMetricTile(
-                title: 'تكلفة المشتريات',
-                money: purchases,
+                title: 'تكلفة البضاعة (COGS)',
+                money: report.totalCogs,
                 color: AppColors.textPrimary,
                 icon: Icons.inventory_2_outlined,
+                subtitle: 'تكلفة الشراء المباشرة',
               ),
             ),
           ],
@@ -105,23 +146,49 @@ class _ReportsPageState extends State<ReportsPage> {
             Expanded(
               child: _buildMetricTile(
                 title: 'الشحن والجمارك',
-                money: shippingFees,
+                money: report.totalAllocatedShipping,
                 color: AppColors.warning,
                 icon: Icons.local_shipping_outlined,
+                subtitle: 'الموزعة على الدفعات',
               ),
             ),
             const SizedBox(width: AppDimensions.space12),
             Expanded(
               child: _buildMetricTile(
                 title: 'المصاريف التشغيلية',
-                money: _selectedCurrency == Currency.sar
-                    ? Money.fromMajor(150, Currency.sar)
-                    : Money.fromMajor(40000, Currency.yer),
+                money: report.totalOperatingExpenses,
                 color: AppColors.expense,
                 icon: Icons.receipt_long_outlined,
+                subtitle: 'تغليف، رصيد، إعلانات...',
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCashFlowAndReceivablesCards(FinancialReport report) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildMetricTile(
+            title: 'المقبوض فعلياً',
+            money: report.totalCollectedPayments,
+            color: AppColors.success,
+            icon: Icons.payments_outlined,
+            subtitle: 'المحصّل في الخزنات',
+          ),
+        ),
+        const SizedBox(width: AppDimensions.space12),
+        Expanded(
+          child: _buildMetricTile(
+            title: 'ديون عند العميلات',
+            money: report.totalReceivables,
+            color: report.totalReceivables.isZero ? AppColors.textSecondary : AppColors.error,
+            icon: Icons.pending_actions_rounded,
+            subtitle: 'متبقي على ذمة الطلبات',
+          ),
         ),
       ],
     );
@@ -132,6 +199,7 @@ class _ReportsPageState extends State<ReportsPage> {
     required Money money,
     required Color color,
     required IconData icon,
+    String? subtitle,
   }) {
     return StoreeCard(
       child: Column(
@@ -141,7 +209,13 @@ class _ReportsPageState extends State<ReportsPage> {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 4),
-              Text(title, style: AppTextStyles.bodySmall),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppDimensions.space8),
@@ -149,26 +223,39 @@ class _ReportsPageState extends State<ReportsPage> {
             money.format(),
             style: AppTextStyles.moneyMedium.copyWith(color: color),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: AppTextStyles.bodySmall.copyWith(fontSize: 10, color: AppColors.textSecondary),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildNetProfitCalculationCard() {
-    final netProfit = _selectedCurrency == Currency.sar
-        ? Money.fromMajor(800, Currency.sar)
-        : Money.fromMajor(215000, Currency.yer);
+  Widget _buildNetProfitCalculationCard(FinancialReport report) {
+    final isProfitable = report.netProfit.amountMinor >= 0;
 
     return StoreeCard(
-      backgroundColor: AppColors.secondary,
+      backgroundColor: isProfitable ? AppColors.secondary : AppColors.surface,
+      border: Border.all(
+        color: isProfitable ? AppColors.primaryLight : AppColors.error.withValues(alpha: 0.5),
+        width: 1.5,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('صافي الربح للفترة', style: AppTextStyles.headingSmall),
-              const Icon(Icons.verified_rounded, color: AppColors.primary, size: 22),
+              Text('صافي الربح الحقيقي للفترة', style: AppTextStyles.headingSmall),
+              Icon(
+                isProfitable ? Icons.verified_rounded : Icons.warning_amber_rounded,
+                color: isProfitable ? AppColors.primary : AppColors.error,
+                size: 24,
+              ),
             ],
           ),
           const SizedBox(height: AppDimensions.space8),
@@ -178,9 +265,27 @@ class _ReportsPageState extends State<ReportsPage> {
           ),
           const SizedBox(height: AppDimensions.space12),
           Text(
-            netProfit.format(),
-            style: AppTextStyles.moneyLarge.copyWith(color: AppColors.primaryDark),
+            report.netProfit.format(),
+            style: AppTextStyles.moneyLarge.copyWith(
+              color: isProfitable ? AppColors.primaryDark : AppColors.error,
+            ),
           ),
+          if (!report.totalPersonalWithdrawals.isZero) ...[
+            const Divider(height: AppDimensions.space20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'سحوبات شخصية للمالك (منفصلة):',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                ),
+                Text(
+                  report.totalPersonalWithdrawals.format(),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -201,7 +306,7 @@ class _ReportsPageState extends State<ReportsPage> {
           const SizedBox(width: AppDimensions.space8),
           Expanded(
             child: Text(
-              'وفقاً لمعايير ستوري المالية: السحوبات الشخصية والتحويلات الداخلية لا تدرج تلقائياً ضمن تكاليف التشغيل للحفاظ على دقة الأرباح الحقيقية.',
+              'وفقاً لقواعد ستوري المحاسبية الصارمة: تحصيل دفعة العميلة لا يعني ربحاً فورياً، والتحويلات بين الخزنات ليست دخلاً أو مصروفاً، وسحوبات المالك الشخصية معزولة تماماً عن تكاليف التشغيل.',
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
             ),
           ),

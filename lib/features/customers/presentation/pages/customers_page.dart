@@ -12,6 +12,7 @@ import '../../domain/entities/customer.dart';
 import '../cubit/customer_cubit.dart';
 import '../cubit/customer_state.dart';
 import '../widgets/add_customer_dialog.dart';
+import '../widgets/customer_detail_sheet.dart';
 
 class CustomersPage extends StatelessWidget {
   const CustomersPage({super.key});
@@ -87,6 +88,7 @@ class CustomersPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.space12),
       child: StoreeCard(
+        onTap: () => CustomerDetailSheet.show(context, customer),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

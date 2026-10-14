@@ -7,7 +7,6 @@ import '../../../../core/money/money.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_button.dart';
 import '../../../../core/widgets/storee_text_field.dart';
-import '../../domain/entities/wallet.dart';
 import '../cubit/wallet_cubit.dart';
 import '../cubit/wallet_state.dart';
 
@@ -45,7 +44,7 @@ class _RecordExpenseDialogState extends State<RecordExpenseDialog> {
   final _notesController = TextEditingController();
 
   late bool _isPersonalWithdrawal;
-  Wallet? _selectedWallet;
+  String? _selectedWalletId;
   Currency _selectedCurrency = Currency.sar;
   String _selectedCategory = 'تغليف وهدايا';
 
@@ -77,7 +76,7 @@ class _RecordExpenseDialogState extends State<RecordExpenseDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedWallet == null) {
+    if (_selectedWalletId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('الرجاء اختيار الخزنة المصروف منها'), backgroundColor: AppColors.error),
       );
@@ -99,13 +98,13 @@ class _RecordExpenseDialogState extends State<RecordExpenseDialog> {
     bool success;
     if (_isPersonalWithdrawal) {
       success = await context.read<WalletCubit>().recordPersonalWithdrawal(
-            walletId: _selectedWallet!.id,
+            walletId: _selectedWalletId!,
             amount: money,
             notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
           );
     } else {
       success = await context.read<WalletCubit>().recordExpense(
-            walletId: _selectedWallet!.id,
+            walletId: _selectedWalletId!,
             amount: money,
             category: _selectedCategory,
             notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
@@ -328,8 +327,9 @@ class _RecordExpenseDialogState extends State<RecordExpenseDialog> {
     return BlocBuilder<WalletCubit, WalletState>(
       builder: (context, state) {
         if (state is WalletLoaded) {
-          if (_selectedWallet == null && state.wallets.isNotEmpty) {
-            _selectedWallet = state.wallets.first;
+          if ((_selectedWalletId == null || !state.wallets.any((w) => w.id == _selectedWalletId)) &&
+              state.wallets.isNotEmpty) {
+            _selectedWalletId = state.wallets.first.id;
           }
 
           return Column(
@@ -345,17 +345,17 @@ class _RecordExpenseDialogState extends State<RecordExpenseDialog> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: DropdownButtonHideUnderline(
-                  child: DropdownButton<Wallet>(
-                    value: _selectedWallet,
+                  child: DropdownButton<String>(
+                    value: _selectedWalletId,
                     isExpanded: true,
                     items: state.wallets.map((w) {
-                      return DropdownMenuItem(
-                        value: w,
+                      return DropdownMenuItem<String>(
+                        value: w.id,
                         child: Text('${w.name} (${w.type.labelAr})', style: AppTextStyles.bodyMedium),
                       );
                     }).toList(),
-                    onChanged: (w) {
-                      if (w != null) setState(() => _selectedWallet = w);
+                    onChanged: (id) {
+                      if (id != null) setState(() => _selectedWalletId = id);
                     },
                   ),
                 ),

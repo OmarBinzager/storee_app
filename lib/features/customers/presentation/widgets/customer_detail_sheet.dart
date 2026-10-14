@@ -8,6 +8,7 @@ import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
 import '../../domain/entities/customer.dart';
+import '../cubit/customer_cubit.dart';
 import '../../../orders/domain/entities/customer_order.dart';
 import '../../../orders/presentation/bloc/order_bloc.dart';
 import '../../../orders/presentation/bloc/order_state.dart';
@@ -15,6 +16,8 @@ import '../../../orders/presentation/widgets/add_order_sheet.dart';
 import '../../../orders/presentation/widgets/order_detail_sheet.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
 import '../../../settings/presentation/cubit/settings_state.dart';
+import '../../../wallets/presentation/cubit/wallet_cubit.dart';
+import '../../../wallets/presentation/widgets/record_payment_dialog.dart';
 
 class CustomerDetailSheet extends StatelessWidget {
   final Customer customer;
@@ -23,6 +26,8 @@ class CustomerDetailSheet extends StatelessWidget {
 
   static void show(BuildContext context, Customer customer) {
     final orderBloc = context.read<OrderBloc>();
+    final customerCubit = context.read<CustomerCubit>();
+    final walletCubit = context.read<WalletCubit>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -30,8 +35,12 @@ class CustomerDetailSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
       ),
-      builder: (_) => BlocProvider.value(
-        value: orderBloc,
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: orderBloc),
+          BlocProvider.value(value: customerCubit),
+          BlocProvider.value(value: walletCubit),
+        ],
         child: CustomerDetailSheet(customer: customer),
       ),
     );
@@ -52,12 +61,17 @@ class CustomerDetailSheet extends StatelessWidget {
               customerOrders = state.allOrders.where((o) => o.customerId == customer.id).toList();
             }
 
-            Money totalOrdersValue = Money.zero(customer.defaultCurrency);
-            Money totalPaidValue = Money.zero(customer.defaultCurrency);
-            Money totalRemainingValue = Money.zero(customer.defaultCurrency);
+            // Determine primary display currency from customer orders if any, else defaultCurrency
+            final displayCurrency = customerOrders.isNotEmpty
+                ? customerOrders.first.currency
+                : customer.defaultCurrency;
+
+            Money totalOrdersValue = Money.zero(displayCurrency);
+            Money totalPaidValue = Money.zero(displayCurrency);
+            Money totalRemainingValue = Money.zero(displayCurrency);
 
             for (final order in customerOrders) {
-              if (order.totalAmount.currency == customer.defaultCurrency) {
+              if (order.totalAmount.currency == displayCurrency) {
                 totalOrdersValue = totalOrdersValue + order.totalAmount;
                 totalPaidValue = totalPaidValue + order.paidAmount;
                 totalRemainingValue = totalRemainingValue + order.remainingAmount;
@@ -129,7 +143,7 @@ class CustomerDetailSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: AppDimensions.space16),
 
-                // Action Buttons (WhatsApp, Call, Add Order)
+                // Action Buttons (WhatsApp, Call)
                 Row(
                   children: [
                     Expanded(
@@ -159,13 +173,34 @@ class CustomerDetailSheet extends StatelessWidget {
                         onPressed: () => WhatsAppService.makePhoneCall(customer.phone),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.space8),
+                // Action Buttons (Record Payment, Add Order)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(borderRadius: AppDimensions.roundedMedium),
+                        ),
+                        icon: const Icon(Icons.payments_outlined, size: 18),
+                        label: const Text('تسجيل دفعة'),
+                        onPressed: () {
+                          RecordPaymentDialog.show(context, preselectedCustomer: customer);
+                        },
+                      ),
+                    ),
                     const SizedBox(width: AppDimensions.space8),
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(borderRadius: AppDimensions.roundedMedium),
                         ),
                         icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),

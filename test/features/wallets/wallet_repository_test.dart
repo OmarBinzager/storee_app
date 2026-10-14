@@ -200,5 +200,92 @@ void main() {
         },
       );
     });
+
+    test('records cross-currency customer payment and updates order remaining balance correctly', () async {
+      // 1. Create customer
+      const customerId = 'cust-cross-test';
+      await customerDataSource.addCustomer(
+        Customer(
+          id: customerId,
+          name: 'أمل الخالدي',
+          phone: '777000333',
+          defaultCurrency: Currency.sar,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // 2. Create order in SAR (Total = 100.00 SAR)
+      const orderId = 'ord-cross-test';
+      await orderDataSource.createOrder(
+        CustomerOrder(
+          id: orderId,
+          customerId: customerId,
+          customerName: 'أمل الخالدي',
+          orderNumber: 'ORD-TEST-CROSS',
+          executionStatus: OrderExecutionStatus.confirmed,
+          paymentStatus: OrderPaymentStatus.unpaid,
+          currency: Currency.sar,
+          items: [
+            OrderItem(
+              id: 'item-cross-1',
+              orderId: orderId,
+              title: 'عباية حرير',
+              quantity: 1,
+              saleUnitPrice: Money.fromMajor(100, Currency.sar),
+            ),
+          ],
+          paidAmount: Money.zero(Currency.sar),
+          discountAmount: Money.zero(Currency.sar),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // 3. Customer pays in Yemeni Rials (YER): 43,000 YER received into Cash wallet
+      // Equivalent SAR deducted from order: 100.00 SAR (settles the order in full)
+      const defaultCashWalletId = 'wallet-cash-default';
+      final receivedYER = Money.fromMajor(43000, Currency.yer);
+      final allocatedSAR = Money.fromMajor(100, Currency.sar);
+
+      final payResult = await repository.recordPayment(
+        customerId: customerId,
+        walletId: defaultCashWalletId,
+        amount: receivedYER,
+        allocations: [(orderId: orderId, allocatedAmount: allocatedSAR)],
+        notes: 'سداد بالريال اليمني بسعر صرف 430',
+      );
+
+      expect(payResult.isRight(), true);
+
+      // 4. Verify wallet received 43,000 YER and 0 SAR
+      final walletsResult = await repository.getWallets();
+      walletsResult.fold(
+        (_) => fail('Expected right'),
+        (wallets) {
+          final defaultWallet = wallets.firstWhere((w) => w.id == defaultCashWalletId);
+          expect(defaultWallet.getBalanceFor(Currency.yer).amountMinor, 43000);
+          expect(defaultWallet.getBalanceFor(Currency.sar).amountMinor, 0);
+        },
+      );
+
+      // 5. Verify order paidAmount updated to 100.00 SAR and remaining is 0.00 SAR (Status: paid)
+      final orders = await orderDataSource.getOrders();
+      final updatedOrder = orders.firstWhere((o) => o.id == orderId);
+      expect(updatedOrder.paidAmount.toMajor, 100.0);
+      expect(updatedOrder.remainingAmount.isZero, true);
+      expect(updatedOrder.paymentStatus, OrderPaymentStatus.paid);
+
+      // 6. Verify ledger transaction recorded in YER
+      final txResult = await repository.getRecentTransactions();
+      txResult.fold(
+        (_) => fail('Expected right'),
+        (txs) {
+          final payTx = txs.firstWhere((t) => t.type == TransactionType.paymentReceived);
+          expect(payTx.amount.currency, Currency.yer);
+          expect(payTx.amount.amountMinor, 43000);
+        },
+      );
+    });
   });
 }

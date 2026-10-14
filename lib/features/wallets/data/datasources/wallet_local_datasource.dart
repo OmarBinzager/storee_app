@@ -188,6 +188,14 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
               ..where((t) => t.id.equals(alloc.orderId)))
             .getSingle();
 
+        if (alloc.allocatedAmount.currency.code != orderRow.currencyCode) {
+          throw ArgumentError(
+            'Currency mismatch: Order ${orderRow.orderNumber} is in ${orderRow.currencyCode}, '
+            'but allocated amount is in ${alloc.allocatedAmount.currency.code}. '
+            'Allocations to an order must be in the order\'s currency.',
+          );
+        }
+
         // Calculate total order amount from its items
         final itemRows = await (database.select(database.orderItemsTable)
               ..where((t) => t.orderId.equals(alloc.orderId)))
@@ -200,7 +208,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
         final finalTotalMinor = totalItemsMinor - orderRow.discountAmountMinor;
 
         final newPaidMinor = orderRow.paidAmountMinor + alloc.allocatedAmount.amountMinor;
-        final newPaymentStatus = (newPaidMinor >= finalTotalMinor) ? 'paid' : 'partial';
+        final newPaymentStatus = (newPaidMinor >= finalTotalMinor)
+            ? 'paid'
+            : (newPaidMinor > 0 ? 'partial' : 'unpaid');
 
         await (database.update(database.customerOrdersTable)..where((t) => t.id.equals(alloc.orderId)))
             .write(

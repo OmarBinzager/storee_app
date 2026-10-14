@@ -39,8 +39,8 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
 
-  Wallet? _sourceWallet;
-  Wallet? _destinationWallet;
+  String? _sourceWalletId;
+  String? _destinationWalletId;
   Currency _selectedCurrency = Currency.sar;
   bool _isSubmitting = false;
 
@@ -54,14 +54,14 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_sourceWallet == null || _destinationWallet == null) {
+    if (_sourceWalletId == null || _destinationWalletId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('الرجاء اختيار خزينة الإرسال والاستقبال'), backgroundColor: AppColors.error),
       );
       return;
     }
 
-    if (_sourceWallet!.id == _destinationWallet!.id) {
+    if (_sourceWalletId == _destinationWalletId) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('لا يمكن التحويل لنفس الخزنة، يرجى اختيار خزنتين مختلفتين'), backgroundColor: AppColors.error),
       );
@@ -81,8 +81,8 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
     final money = Money.fromMajor(amountMajor, _selectedCurrency);
 
     final success = await context.read<WalletCubit>().recordTransfer(
-          fromWalletId: _sourceWallet!.id,
-          toWalletId: _destinationWallet!.id,
+          fromWalletId: _sourceWalletId!,
+          toWalletId: _destinationWalletId!,
           amount: money,
           notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
         );
@@ -93,7 +93,7 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تحويل ${money.format()} من ${_sourceWallet!.name} إلى ${_destinationWallet!.name} بنجاح'),
+            content: Text('تم التحويل الداخلي بنجاح بقيمة ${money.format()}'),
             backgroundColor: AppColors.info,
           ),
         );
@@ -241,21 +241,21 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
       builder: (context, state) {
         if (state is WalletLoaded) {
           final wallets = state.wallets;
-          if (_sourceWallet == null && wallets.isNotEmpty) {
-            _sourceWallet = wallets.first;
+          if ((_sourceWalletId == null || !wallets.any((w) => w.id == _sourceWalletId)) && wallets.isNotEmpty) {
+            _sourceWalletId = wallets.first.id;
           }
-          if (_destinationWallet == null && wallets.length > 1) {
-            _destinationWallet = wallets[1];
+          if ((_destinationWalletId == null || !wallets.any((w) => w.id == _destinationWalletId)) && wallets.length > 1) {
+            _destinationWalletId = wallets[1].id;
           }
 
           return Column(
             children: [
-              _buildSingleWalletDropdown('من خزنة (المصدر) *', _sourceWallet, wallets, (w) {
-                setState(() => _sourceWallet = w);
+              _buildSingleWalletDropdown('من خزنة (المصدر) *', _sourceWalletId, wallets, (id) {
+                setState(() => _sourceWalletId = id);
               }),
               const SizedBox(height: AppDimensions.space12),
-              _buildSingleWalletDropdown('إلى خزنة (المستلم) *', _destinationWallet, wallets, (w) {
-                setState(() => _destinationWallet = w);
+              _buildSingleWalletDropdown('إلى خزنة (المستلم) *', _destinationWalletId, wallets, (id) {
+                setState(() => _destinationWalletId = id);
               }),
             ],
           );
@@ -267,9 +267,9 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
 
   Widget _buildSingleWalletDropdown(
     String label,
-    Wallet? current,
+    String? currentId,
     List<Wallet> wallets,
-    void Function(Wallet?) onChanged,
+    void Function(String?) onChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,12 +284,12 @@ class _TransferFundsDialogState extends State<TransferFundsDialog> {
             border: Border.all(color: AppColors.border),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<Wallet>(
-              value: current,
+            child: DropdownButton<String>(
+              value: currentId,
               isExpanded: true,
               items: wallets.map((w) {
-                return DropdownMenuItem(
-                  value: w,
+                return DropdownMenuItem<String>(
+                  value: w.id,
                   child: Text('${w.name} (${w.type.labelAr})', style: AppTextStyles.bodyMedium),
                 );
               }).toList(),

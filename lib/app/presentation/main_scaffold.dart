@@ -4,8 +4,10 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/text_styles.dart';
 import '../../features/customers/presentation/pages/customers_page.dart';
+import '../../features/customers/presentation/widgets/add_customer_dialog.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/orders/presentation/pages/orders_page.dart';
+import '../../features/orders/presentation/widgets/add_order_sheet.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/wallets/presentation/pages/wallets_page.dart';
 
@@ -66,13 +68,19 @@ class _MainScaffoldState extends State<MainScaffold> {
                       icon: Icons.add_shopping_cart_rounded,
                       title: AppStrings.newOrder,
                       color: AppColors.primary,
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        AddOrderSheet.show(context);
+                      },
                     ),
                     _buildActionItem(
                       icon: Icons.person_add_outlined,
                       title: AppStrings.newCustomer,
                       color: AppColors.info,
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        AddCustomerDialog.show(context);
+                      },
                     ),
                     _buildActionItem(
                       icon: Icons.payments_outlined,

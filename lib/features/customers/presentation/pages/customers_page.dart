@@ -10,6 +10,7 @@ import '../../../../core/widgets/storee_empty_state.dart';
 import '../../domain/entities/customer.dart';
 import '../cubit/customer_cubit.dart';
 import '../cubit/customer_state.dart';
+import '../widgets/add_customer_dialog.dart';
 
 class CustomersPage extends StatelessWidget {
   const CustomersPage({super.key});
@@ -19,6 +20,13 @@ class CustomersPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.navCustomers),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_rounded, color: AppColors.primary),
+            tooltip: 'إضافة عميلة',
+            onPressed: () => AddCustomerDialog.show(context),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -45,10 +53,12 @@ class CustomersPage extends StatelessWidget {
                 }
                 if (state is CustomerLoaded) {
                   if (state.filteredCustomers.isEmpty) {
-                    return const StoreeEmptyState(
+                    return StoreeEmptyState(
                       title: 'لا توجد عميلات',
-                      message: 'لم يتم العثور على عميلة بهذا الاسم أو الرقم.',
+                      message: 'لم يتم العثور على أي عميلة تطابق البحث. اضغطي الزر لإضافة عميلة جديدة.',
                       icon: Icons.person_search_outlined,
+                      actionLabel: 'إضافة عميلة جديدة',
+                      onAction: () => AddCustomerDialog.show(context),
                     );
                   }
                   return ListView.builder(

@@ -11,6 +11,7 @@ import '../../domain/entities/customer_order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
+import '../widgets/add_order_sheet.dart';
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
@@ -20,6 +21,13 @@ class OrdersPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.navOrders),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_shopping_cart_rounded, color: AppColors.primary),
+            tooltip: 'إنشاء طلبية جديدة',
+            onPressed: () => AddOrderSheet.show(context),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -48,10 +56,12 @@ class OrdersPage extends StatelessWidget {
                 }
                 if (state is OrderLoaded) {
                   if (state.filteredOrders.isEmpty) {
-                    return const StoreeEmptyState(
+                    return StoreeEmptyState(
                       title: 'لا توجد طلبات',
-                      message: 'لم يتم العثور على أي طلبات تطابق الفلتر أو البحث الحالي.',
+                      message: 'لم يتم العثور على أي طلبات تطابق الفلتر أو البحث الحالي. أنشئي طلبية جديدة بالضغط أدناه.',
                       icon: Icons.receipt_long_outlined,
+                      actionLabel: 'إنشاء طلبية جديدة',
+                      onAction: () => AddOrderSheet.show(context),
                     );
                   }
                   return ListView.builder(
@@ -143,9 +153,31 @@ class OrdersPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                StoreeBadge(
-                  label: order.executionStatus.labelAr,
-                  type: _getExecutionBadgeType(order.executionStatus),
+                PopupMenuButton<OrderExecutionStatus>(
+                  tooltip: 'تغيير حالة التنفيذ',
+                  onSelected: (newStatus) {
+                    context.read<OrderBloc>().add(
+                          UpdateOrderStatusEvent(
+                            orderId: order.id,
+                            newStatus: newStatus,
+                          ),
+                        );
+                  },
+                  itemBuilder: (ctx) => OrderExecutionStatus.values.map((s) {
+                    return PopupMenuItem(
+                      value: s,
+                      child: Text(s.labelAr, style: AppTextStyles.bodyMedium),
+                    );
+                  }).toList(),
+                  child: Row(
+                    children: [
+                      StoreeBadge(
+                        label: order.executionStatus.labelAr,
+                        type: _getExecutionBadgeType(order.executionStatus),
+                      ),
+                      const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.textSecondary),
+                    ],
+                  ),
                 ),
               ],
             ),

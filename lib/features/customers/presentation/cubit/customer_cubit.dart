@@ -1,47 +1,24 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/money/currency.dart';
 import '../../domain/entities/customer.dart';
+import '../../domain/repositories/customer_repository.dart';
 import 'customer_state.dart';
 
 class CustomerCubit extends Cubit<CustomerState> {
-  CustomerCubit() : super(CustomerInitial());
+  final CustomerRepository repository;
 
-  void loadCustomers() {
+  CustomerCubit(this.repository) : super(CustomerInitial());
+
+  Future<void> loadCustomers() async {
     emit(CustomerLoading());
 
-    final initialCustomers = [
-      Customer(
-        id: 'cust-1',
-        name: 'فاطمة الكاف',
-        phone: '777123456',
-        defaultCurrency: Currency.sar,
-        notes: 'تفضل التوصيل عصرًا، عميلة منتظمة',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now(),
-      ),
-      Customer(
-        id: 'cust-2',
-        name: 'منى باوزير',
-        phone: '733987654',
-        defaultCurrency: Currency.yer,
-        notes: 'دفع عبر محفظة جيب كاش',
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        updatedAt: DateTime.now(),
-      ),
-      Customer(
-        id: 'cust-3',
-        name: 'أروى باحميد',
-        phone: '711554433',
-        defaultCurrency: Currency.sar,
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        updatedAt: DateTime.now(),
-      ),
-    ];
-
-    emit(CustomerLoaded(
-      customers: initialCustomers,
-      filteredCustomers: initialCustomers,
-    ));
+    final result = await repository.getCustomers();
+    result.fold(
+      (failure) => emit(CustomerError(failure.message)),
+      (customers) => emit(CustomerLoaded(
+        customers: customers,
+        filteredCustomers: customers,
+      )),
+    );
   }
 
   void search(String query) {
@@ -59,14 +36,26 @@ class CustomerCubit extends Cubit<CustomerState> {
     }
   }
 
-  void addCustomer(Customer customer) {
-    if (state is CustomerLoaded) {
-      final current = state as CustomerLoaded;
-      final updated = [customer, ...current.customers];
-      emit(current.copyWith(
-        customers: updated,
-        filteredCustomers: updated,
-      ));
-    }
+  Future<bool> addCustomer(Customer customer) async {
+    final result = await repository.addCustomer(customer);
+    return result.fold(
+      (failure) {
+        emit(CustomerError(failure.message));
+        return false;
+      },
+      (created) {
+        if (state is CustomerLoaded) {
+          final current = state as CustomerLoaded;
+          final updated = [created, ...current.customers];
+          emit(current.copyWith(
+            customers: updated,
+            filteredCustomers: updated,
+          ));
+        } else {
+          loadCustomers();
+        }
+        return true;
+      },
+    );
   }
 }

@@ -9,6 +9,10 @@ import '../../../../core/widgets/storee_card.dart';
 import '../../domain/entities/wallet.dart';
 import '../cubit/wallet_cubit.dart';
 import '../cubit/wallet_state.dart';
+import '../widgets/add_wallet_dialog.dart';
+import '../widgets/record_expense_dialog.dart';
+import '../widgets/record_payment_dialog.dart';
+import '../widgets/transfer_funds_dialog.dart';
 
 class WalletsPage extends StatelessWidget {
   const WalletsPage({super.key});
@@ -18,6 +22,13 @@ class WalletsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.navWallets),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+            tooltip: 'إضافة خزنة جديدة',
+            onPressed: () => AddWalletDialog.show(context),
+          ),
+        ],
       ),
       body: BlocBuilder<WalletCubit, WalletState>(
         builder: (context, state) {
@@ -25,21 +36,121 @@ class WalletsPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is WalletLoaded) {
-            return ListView(
-              padding: const EdgeInsets.all(AppDimensions.space16),
-              children: [
-                Text('الخزنات والحسابات', style: AppTextStyles.headingSmall),
-                const SizedBox(height: AppDimensions.space12),
-                ...state.wallets.map((wallet) => _buildWalletCard(wallet)),
-                const SizedBox(height: AppDimensions.space24),
-                Text('سجل الحركات المالية الأخير', style: AppTextStyles.headingSmall),
-                const SizedBox(height: AppDimensions.space12),
-                ...state.recentTransactions.map((tx) => _buildTransactionTile(tx)),
-              ],
+            return RefreshIndicator(
+              onRefresh: () => context.read<WalletCubit>().loadWallets(),
+              child: ListView(
+                padding: const EdgeInsets.all(AppDimensions.space16),
+                children: [
+                  _buildFinancialActionBar(context),
+                  const SizedBox(height: AppDimensions.space20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('الخزنات والحسابات', style: AppTextStyles.headingSmall),
+                      TextButton.icon(
+                        onPressed: () => AddWalletDialog.show(context),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('خزنة جديدة'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimensions.space8),
+                  ...state.wallets.map((wallet) => _buildWalletCard(wallet)),
+                  const SizedBox(height: AppDimensions.space24),
+                  Text('سجل الحركات المالية الأخير', style: AppTextStyles.headingSmall),
+                  const SizedBox(height: AppDimensions.space12),
+                  if (state.recentTransactions.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(AppDimensions.space20),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppDimensions.roundedMedium,
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'لا توجد حركات مالية مسجلة بعد. عند استلام دفعة أو تسجيل مصروف ستظهر هنا.',
+                          style: AppTextStyles.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  else
+                    ...state.recentTransactions.map((tx) => _buildTransactionTile(tx)),
+                ],
+              ),
             );
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildFinancialActionBar(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildQuickActionButton(
+            label: 'تسجيل دفعة',
+            icon: Icons.payments_outlined,
+            color: AppColors.success,
+            onTap: () => RecordPaymentDialog.show(context),
+          ),
+        ),
+        const SizedBox(width: AppDimensions.space8),
+        Expanded(
+          child: _buildQuickActionButton(
+            label: 'تسجيل مصروف',
+            icon: Icons.receipt_long_outlined,
+            color: AppColors.warning,
+            onTap: () => RecordExpenseDialog.show(context),
+          ),
+        ),
+        const SizedBox(width: AppDimensions.space8),
+        Expanded(
+          child: _buildQuickActionButton(
+            label: 'تحويل داخلي',
+            icon: Icons.swap_horiz_rounded,
+            color: AppColors.info,
+            onTap: () => TransferFundsDialog.show(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: AppDimensions.roundedMedium,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppDimensions.space12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: AppDimensions.roundedMedium,
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

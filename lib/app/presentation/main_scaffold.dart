@@ -10,6 +10,9 @@ import '../../features/orders/presentation/pages/orders_page.dart';
 import '../../features/orders/presentation/widgets/add_order_sheet.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/wallets/presentation/pages/wallets_page.dart';
+import '../../features/wallets/presentation/widgets/record_expense_dialog.dart';
+import '../../features/wallets/presentation/widgets/record_payment_dialog.dart';
+import '../../features/wallets/presentation/widgets/transfer_funds_dialog.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -86,19 +89,28 @@ class _MainScaffoldState extends State<MainScaffold> {
                       icon: Icons.payments_outlined,
                       title: AppStrings.newPayment,
                       color: AppColors.success,
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        RecordPaymentDialog.show(context);
+                      },
                     ),
                     _buildActionItem(
                       icon: Icons.receipt_long_outlined,
                       title: AppStrings.newExpense,
                       color: AppColors.warning,
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        RecordExpenseDialog.show(context);
+                      },
                     ),
                     _buildActionItem(
                       icon: Icons.swap_horiz_rounded,
                       title: AppStrings.newTransfer,
                       color: AppColors.primaryLight,
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        TransferFundsDialog.show(context);
+                      },
                     ),
                     _buildActionItem(
                       icon: Icons.local_shipping_outlined,

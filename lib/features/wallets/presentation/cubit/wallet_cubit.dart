@@ -1,75 +1,146 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../domain/entities/wallet.dart';
+import '../../domain/repositories/wallet_repository.dart';
 import 'wallet_state.dart';
 
 class WalletCubit extends Cubit<WalletState> {
-  WalletCubit() : super(WalletInitial());
+  final WalletRepository repository;
 
-  void loadWallets() {
+  WalletCubit(this.repository) : super(WalletInitial());
+
+  Future<void> loadWallets() async {
     emit(WalletLoading());
 
-    final wallets = [
-      Wallet(
-        id: 'w1',
-        name: 'الكاش الشخصي',
-        type: WalletType.cash,
-        balances: {
-          'YER': Money.fromMajor(450000, Currency.yer),
-          'SAR': Money.fromMajor(1200, Currency.sar),
-        },
-      ),
-      Wallet(
-        id: 'w2',
-        name: 'محفظة جيب / ون كاش',
-        type: WalletType.electronicWallet,
-        balances: {
-          'YER': Money.fromMajor(280000, Currency.yer),
-          'SAR': Money.zero(Currency.sar),
-        },
-      ),
-      Wallet(
-        id: 'w3',
-        name: 'حساب بنك الكريمي',
-        type: WalletType.bankAccount,
-        balances: {
-          'YER': Money.fromMajor(950000, Currency.yer),
-          'SAR': Money.fromMajor(3400, Currency.sar),
-        },
-      ),
-    ];
+    final walletsResult = await repository.getWallets();
+    final transactionsResult = await repository.getRecentTransactions();
 
-    final transactions = [
-      FinancialTransaction(
-        id: 'tx-1',
-        type: TransactionType.paymentReceived,
-        walletId: 'w1',
-        amount: Money.fromMajor(100, Currency.sar),
-        occurredAt: DateTime.now().subtract(const Duration(hours: 3)),
-        notes: 'عربون طلبية فاطمة الكاف #1042',
-      ),
-      FinancialTransaction(
-        id: 'tx-2',
-        type: TransactionType.operationalExpense,
-        walletId: 'w2',
-        amount: Money.fromMajor(4000, Currency.yer),
-        occurredAt: DateTime.now().subtract(const Duration(days: 1)),
-        notes: 'أكياس وتغليف هدايا للمتجر',
-      ),
-      FinancialTransaction(
-        id: 'tx-3',
-        type: TransactionType.personalWithdrawal,
-        walletId: 'w3',
-        amount: Money.fromMajor(500, Currency.sar),
-        occurredAt: DateTime.now().subtract(const Duration(days: 3)),
-        notes: 'سحب شخصي للمالكة (خارج حسابات التشغيل)',
-      ),
-    ];
+    walletsResult.fold(
+      (failure) => emit(WalletError(failure.message)),
+      (wallets) {
+        transactionsResult.fold(
+          (failure) => emit(WalletLoaded(wallets: wallets, recentTransactions: const [])),
+          (transactions) => emit(WalletLoaded(wallets: wallets, recentTransactions: transactions)),
+        );
+      },
+    );
+  }
 
-    emit(WalletLoaded(
-      wallets: wallets,
-      recentTransactions: transactions,
-    ));
+  Future<bool> createWallet({required String name, required WalletType type}) async {
+    final result = await repository.createWallet(name: name, type: type);
+    return result.fold(
+      (failure) {
+        emit(WalletError(failure.message));
+        return false;
+      },
+      (_) {
+        loadWallets();
+        return true;
+      },
+    );
+  }
+
+  Future<bool> recordPayment({
+    required String customerId,
+    required String walletId,
+    required Money amount,
+    required List<({String orderId, Money allocatedAmount})> allocations,
+    String? notes,
+  }) async {
+    final result = await repository.recordPayment(
+      customerId: customerId,
+      walletId: walletId,
+      amount: amount,
+      allocations: allocations,
+      notes: notes,
+    );
+
+    return result.fold(
+      (failure) {
+        emit(WalletError(failure.message));
+        return false;
+      },
+      (_) {
+        loadWallets();
+        return true;
+      },
+    );
+  }
+
+  Future<bool> recordExpense({
+    required String walletId,
+    required Money amount,
+    required String category,
+    String? orderId,
+    String? purchaseBatchId,
+    String? notes,
+  }) async {
+    final result = await repository.recordExpense(
+      walletId: walletId,
+      amount: amount,
+      category: category,
+      orderId: orderId,
+      purchaseBatchId: purchaseBatchId,
+      notes: notes,
+    );
+
+    return result.fold(
+      (failure) {
+        emit(WalletError(failure.message));
+        return false;
+      },
+      (_) {
+        loadWallets();
+        return true;
+      },
+    );
+  }
+
+  Future<bool> recordPersonalWithdrawal({
+    required String walletId,
+    required Money amount,
+    String? notes,
+  }) async {
+    final result = await repository.recordPersonalWithdrawal(
+      walletId: walletId,
+      amount: amount,
+      notes: notes,
+    );
+
+    return result.fold(
+      (failure) {
+        emit(WalletError(failure.message));
+        return false;
+      },
+      (_) {
+        loadWallets();
+        return true;
+      },
+    );
+  }
+
+  Future<bool> recordTransfer({
+    required String fromWalletId,
+    required String toWalletId,
+    required Money amount,
+    String? notes,
+  }) async {
+    final result = await repository.recordTransfer(
+      fromWalletId: fromWalletId,
+      toWalletId: toWalletId,
+      amount: amount,
+      notes: notes,
+    );
+
+    return result.fold(
+      (failure) {
+        emit(WalletError(failure.message));
+        return false;
+      },
+      (_) {
+        loadWallets();
+        return true;
+      },
+    );
   }
 }

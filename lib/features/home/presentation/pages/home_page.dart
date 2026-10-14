@@ -8,6 +8,7 @@ import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
 import '../../../backup/presentation/pages/backup_page.dart';
 import '../../../licensing/presentation/pages/license_page.dart';
+import '../../../orders/presentation/widgets/order_detail_sheet.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 
@@ -90,7 +91,7 @@ class HomePage extends StatelessWidget {
                       ),
                     )
                   else
-                    ...state.recentOrders.map((order) => _buildOrderTile(order)),
+                    ...state.recentOrders.map((order) => _buildOrderTile(context, order)),
                   const SizedBox(height: AppDimensions.space32),
                 ],
               ),
@@ -277,47 +278,51 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderTile(dynamic order) {
+  Widget _buildOrderTile(BuildContext context, dynamic order) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.space8),
-      child: StoreeCard(
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppDimensions.space12),
-              decoration: const BoxDecoration(
-                color: AppColors.secondary,
-                shape: BoxShape.circle,
+      child: InkWell(
+        borderRadius: AppDimensions.roundedMedium,
+        onTap: () => OrderDetailSheet.show(context, order),
+        child: StoreeCard(
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.space12),
+                decoration: const BoxDecoration(
+                  color: AppColors.secondary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.shopping_bag_outlined, color: AppColors.primary, size: 22),
               ),
-              child: const Icon(Icons.shopping_bag_outlined, color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: AppDimensions.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(order.customerName, style: AppTextStyles.subtitleLarge),
-                      Text(order.orderNumber, style: AppTextStyles.bodySmall),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(order.totalAmount.format(), style: AppTextStyles.moneySmall),
-                      StoreeBadge(
-                        label: order.executionStatus.labelAr,
-                        type: BadgeType.primary,
-                      ),
-                    ],
-                  ),
-                ],
+              const SizedBox(width: AppDimensions.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(order.customerName, style: AppTextStyles.subtitleLarge),
+                        Text(order.orderNumber, style: AppTextStyles.bodySmall),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(order.totalAmount.format(), style: AppTextStyles.moneySmall),
+                        StoreeBadge(
+                          label: order.executionStatus.labelAr,
+                          type: BadgeType.primary,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

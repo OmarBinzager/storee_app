@@ -13,6 +13,7 @@ import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
 import '../widgets/add_order_sheet.dart';
+import '../widgets/order_detail_sheet.dart';
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
@@ -146,23 +147,26 @@ class OrdersPage extends StatelessWidget {
   Widget _buildOrderCard(BuildContext context, CustomerOrder order) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.space12),
-      child: StoreeCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Text(order.customerName, style: AppTextStyles.headingSmall),
-                    const SizedBox(width: AppDimensions.space8),
-                    Text(
-                      order.orderNumber,
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
+      child: InkWell(
+        borderRadius: AppDimensions.roundedMedium,
+        onTap: () => OrderDetailSheet.show(context, order),
+        child: StoreeCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(order.customerName, style: AppTextStyles.headingSmall),
+                      const SizedBox(width: AppDimensions.space8),
+                      Text(
+                        order.orderNumber,
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
                 PopupMenuButton<OrderExecutionStatus>(
                   tooltip: 'تغيير حالة التنفيذ',
                   onSelected: (newStatus) {
@@ -238,8 +242,9 @@ class OrdersPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   BadgeType _getExecutionBadgeType(OrderExecutionStatus status) {
     return switch (status) {

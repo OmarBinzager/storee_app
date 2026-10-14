@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/services/whatsapp_service.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
@@ -114,14 +115,39 @@ class CustomersPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Text(customer.phone, style: AppTextStyles.bodySmall),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Text(customer.phone, style: AppTextStyles.bodySmall),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.success, size: 20),
+                            tooltip: 'مراسلة عبر واتساب',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              WhatsAppService.launchWhatsApp(phone: customer.phone);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.phone_in_talk_outlined, color: AppColors.primary, size: 20),
+                            tooltip: 'اتصال هاتفي',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              WhatsAppService.makePhoneCall(customer.phone);
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   if (customer.notes != null && customer.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       customer.notes!,
                       style: AppTextStyles.bodySmall.copyWith(

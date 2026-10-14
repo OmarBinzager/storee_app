@@ -11,10 +11,12 @@ Future<T?> showResponsiveModalSheet<T>({
   bool isScrollControlled = true,
   bool isDismissible = true,
   bool enableDrag = true,
+  bool useRootNavigator = true,
   double maxWidth = StoreeBreakpoints.maxModalWidth,
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    useRootNavigator: useRootNavigator,
     isScrollControlled: isScrollControlled,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
@@ -24,33 +26,37 @@ Future<T?> showResponsiveModalSheet<T>({
       final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
       final isTablet = ctx.isTabletOrLarger;
 
-      return SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isTablet ? maxWidth : double.infinity,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: isTablet
-                      ? const BorderRadius.all(Radius.circular(AppDimensions.radiusLarge))
-                      : const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                margin: isTablet ? const EdgeInsets.all(AppDimensions.space24) : EdgeInsets.zero,
-                clipBehavior: Clip.antiAlias,
-                child: builder(ctx),
-              ),
+      final sheetBody = Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: isTablet
+              ? const BorderRadius.all(Radius.circular(AppDimensions.radiusLarge))
+              : const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
+          ],
+        ),
+        margin: isTablet ? const EdgeInsets.all(AppDimensions.space24) : EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: builder(ctx),
+        ),
+      );
+
+      return Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Align(
+          alignment: isTablet ? Alignment.center : Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isTablet ? maxWidth : double.infinity,
+            ),
+            child: isTablet ? SafeArea(child: sheetBody) : sheetBody,
           ),
         ),
       );

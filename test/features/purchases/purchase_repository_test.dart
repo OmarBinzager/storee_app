@@ -9,6 +9,7 @@ import 'package:storee/features/orders/domain/entities/customer_order.dart';
 import 'package:storee/features/orders/domain/entities/order_item.dart';
 import 'package:storee/features/purchases/data/datasources/purchase_local_datasource.dart';
 import 'package:storee/features/purchases/data/repositories/purchase_repository_impl.dart';
+import 'package:storee/features/purchases/domain/entities/purchase_batch.dart';
 import 'package:storee/features/purchases/domain/services/batch_cost_allocator.dart';
 import 'package:storee/features/wallets/data/datasources/wallet_local_datasource.dart';
 import 'package:storee/features/wallets/domain/entities/wallet.dart';
@@ -159,5 +160,76 @@ void main() {
       expect(batches.first.items.length, 2);
       expect(batches.first.finalTotalCost, Money.fromMajor(330.0, Currency.sar));
     });
+
+    test('updates batch status to shipping and arrived, automatically transitioning orders to readyToDeliver', () async {
+      const customerId = 'cust-status-1';
+      final now = DateTime.now();
+      await customerDataSource.addCustomer(
+        Customer(
+          id: customerId,
+          name: 'فاطمة باحارثة',
+          phone: '777111222',
+          defaultCurrency: Currency.sar,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+
+      const orderId = 'order-status-1';
+      final item = OrderItem(
+        id: 'item-status-1',
+        orderId: orderId,
+        title: 'طقم ذهبي',
+        quantity: 1,
+        saleUnitPrice: Money.fromMajor(500.0, Currency.sar),
+      );
+
+      await orderDataSource.createOrder(
+        CustomerOrder(
+          id: orderId,
+          orderNumber: 'ORD-202',
+          customerId: customerId,
+          customerName: 'فاطمة باحارثة',
+          executionStatus: OrderExecutionStatus.newOrder,
+          paymentStatus: OrderPaymentStatus.unpaid,
+          currency: Currency.sar,
+          items: [item],
+          paidAmount: Money.zero(Currency.sar),
+          discountAmount: Money.zero(Currency.sar),
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+
+      // Create Batch with item
+      final createResult = await repository.createBatch(
+        storeName: 'زارا (Zara)',
+        currency: Currency.sar,
+        extraCosts: Money.zero(Currency.sar),
+        discounts: Money.zero(Currency.sar),
+        items: [
+          BatchItemAllocated(
+            orderItemId: item.id,
+            title: item.title,
+            quantity: 1,
+            baseCost: Money.fromMajor(300.0, Currency.sar),
+            allocatedExtraCost: Money.zero(Currency.sar),
+          ),
+        ],
+      );
+
+      final batch = createResult.getOrElse(() => throw Exception('Failed to create batch'));
+
+      // 1. Update batch to shipping -> order executionStatus becomes shipping
+      await repository.updateBatchStatus(batch.id, PurchaseBatchStatus.shipping);
+      var orders = await orderDataSource.getOrders();
+      expect(orders.firstWhere((o) => o.id == orderId).executionStatus, OrderExecutionStatus.shipping);
+
+      // 2. Update batch to arrived -> order executionStatus becomes readyToDeliver!
+      await repository.updateBatchStatus(batch.id, PurchaseBatchStatus.arrived);
+      orders = await orderDataSource.getOrders();
+      expect(orders.firstWhere((o) => o.id == orderId).executionStatus, OrderExecutionStatus.readyToDeliver);
+    });
   });
 }
+

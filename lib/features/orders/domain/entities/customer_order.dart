@@ -8,19 +8,25 @@ enum OrderExecutionStatus {
   confirmed,
   purchased,
   shipping,
+  partiallyArrived,
   arrived,
   readyToDeliver,
+  outForDelivery,
   delivered,
+  deliveryRescheduled,
   cancelled;
 
   String get labelAr => switch (this) {
         OrderExecutionStatus.newOrder => 'جديد',
         OrderExecutionStatus.confirmed => 'مؤكد',
         OrderExecutionStatus.purchased => 'تم الشراء',
-        OrderExecutionStatus.shipping => 'قيد الشحن',
-        OrderExecutionStatus.arrived => 'وصل',
+        OrderExecutionStatus.shipping => 'قيد الشحن الدولي',
+        OrderExecutionStatus.partiallyArrived => 'وصل جزئياً',
+        OrderExecutionStatus.arrived => 'وصل للمقر',
         OrderExecutionStatus.readyToDeliver => 'جاهز للتسليم',
+        OrderExecutionStatus.outForDelivery => 'مع المندوبة للتوصيل',
         OrderExecutionStatus.delivered => 'تم التسليم',
+        OrderExecutionStatus.deliveryRescheduled => 'مؤجل / تعذر التسليم',
         OrderExecutionStatus.cancelled => 'ملغي',
       };
 }

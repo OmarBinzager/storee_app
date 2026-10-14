@@ -412,12 +412,18 @@ class CustomerDetailSheet extends StatelessWidget {
         return StoreeBadge(label: status.labelAr, type: BadgeType.info);
       case OrderExecutionStatus.shipping:
         return StoreeBadge(label: status.labelAr, type: BadgeType.warning);
+      case OrderExecutionStatus.partiallyArrived:
+        return StoreeBadge(label: status.labelAr, type: BadgeType.warning);
       case OrderExecutionStatus.arrived:
         return StoreeBadge(label: status.labelAr, type: BadgeType.info);
       case OrderExecutionStatus.readyToDeliver:
-        return StoreeBadge(label: status.labelAr, type: BadgeType.warning);
+        return StoreeBadge(label: status.labelAr, type: BadgeType.primary);
+      case OrderExecutionStatus.outForDelivery:
+        return StoreeBadge(label: status.labelAr, type: BadgeType.info);
       case OrderExecutionStatus.delivered:
         return StoreeBadge(label: status.labelAr, type: BadgeType.success);
+      case OrderExecutionStatus.deliveryRescheduled:
+        return StoreeBadge(label: status.labelAr, type: BadgeType.error);
       case OrderExecutionStatus.cancelled:
         return StoreeBadge(label: status.labelAr, type: BadgeType.error);
     }

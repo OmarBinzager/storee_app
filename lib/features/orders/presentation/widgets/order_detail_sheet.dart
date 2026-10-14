@@ -16,9 +16,13 @@ import '../../../settings/presentation/cubit/settings_cubit.dart';
 import '../../../settings/presentation/cubit/settings_state.dart';
 import '../../../wallets/presentation/cubit/wallet_cubit.dart';
 import '../../domain/entities/customer_order.dart';
+import '../../domain/entities/order_item.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
+import '../../../purchases/domain/entities/purchase_batch.dart';
+import '../../../purchases/presentation/cubit/purchase_cubit.dart';
+import '../../../purchases/presentation/cubit/purchase_state.dart';
 
 class OrderDetailSheet extends StatelessWidget {
   final CustomerOrder order;
@@ -29,6 +33,7 @@ class OrderDetailSheet extends StatelessWidget {
     final orderBloc = context.read<OrderBloc>();
     final customerCubit = context.read<CustomerCubit>();
     final walletCubit = context.read<WalletCubit>();
+    final purchaseCubit = context.read<PurchaseCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -41,6 +46,7 @@ class OrderDetailSheet extends StatelessWidget {
           BlocProvider.value(value: orderBloc),
           BlocProvider.value(value: customerCubit),
           BlocProvider.value(value: walletCubit),
+          BlocProvider.value(value: purchaseCubit),
         ],
         child: OrderDetailSheet(order: order),
       ),
@@ -123,12 +129,92 @@ class OrderDetailSheet extends StatelessWidget {
                         context.read<OrderBloc>().add(
                               UpdateOrderStatusEvent(orderId: currentOrder.id, newStatus: newStatus),
                             );
-                        Navigator.pop(context);
+                        if (newStatus == OrderExecutionStatus.delivered && !currentOrder.remainingAmount.isZero) {
+                          _promptDeliveryPayment(context, currentOrder);
+                        }
                       }
                     },
                   ),
                 ],
               ),
+              const SizedBox(height: AppDimensions.space8),
+              // Courier Quick Transition Banners
+              if (currentOrder.executionStatus == OrderExecutionStatus.readyToDeliver) ...[
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.space12),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: AppDimensions.roundedMedium,
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: AppColors.success),
+                      const SizedBox(width: AppDimensions.space8),
+                      Expanded(
+                        child: Text(
+                          'جميع المنتجات وصلت للمقر وجاهزة للتسليم',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.success, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        ),
+                        icon: const Icon(Icons.two_wheeler_outlined, size: 16),
+                        label: const Text('تسليم للمندوبة', style: TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          context.read<OrderBloc>().add(
+                                UpdateOrderStatusEvent(orderId: currentOrder.id, newStatus: OrderExecutionStatus.outForDelivery),
+                              );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.space8),
+              ] else if (currentOrder.executionStatus == OrderExecutionStatus.outForDelivery) ...[
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.space12),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: AppDimensions.roundedMedium,
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delivery_dining_outlined, color: AppColors.warning),
+                      const SizedBox(width: AppDimensions.space8),
+                      Expanded(
+                        child: Text(
+                          'الطلبية مع المندوبة للتوصيل للعميلة',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        ),
+                        icon: const Icon(Icons.done_all_rounded, size: 16),
+                        label: const Text('تم التسليم', style: TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          context.read<OrderBloc>().add(
+                                UpdateOrderStatusEvent(orderId: currentOrder.id, newStatus: OrderExecutionStatus.delivered),
+                              );
+                          if (!currentOrder.remainingAmount.isZero) {
+                            _promptDeliveryPayment(context, currentOrder);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.space8),
+              ],
               const SizedBox(height: AppDimensions.space12),
               // Items Breakdown
               Text('المنتجات المطلوبة (${currentOrder.items.length})', style: AppTextStyles.headingSmall),
@@ -179,6 +265,8 @@ class OrderDetailSheet extends StatelessWidget {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 4),
+                                  _buildItemTrackingBadge(context, item),
                                   if (item.hasOptionalDetails) ...[
                                     const SizedBox(height: 4),
                                     Text(
@@ -333,4 +421,77 @@ class OrderDetailSheet extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildItemTrackingBadge(BuildContext context, OrderItem item) {
+    if (item.unitCost == null) {
+      return const StoreeBadge(
+        label: '⏳ بانتظار الشراء',
+        type: BadgeType.info,
+      );
+    }
+
+    final purchaseState = context.watch<PurchaseCubit>().state;
+    if (purchaseState is PurchaseLoaded) {
+      final batch = purchaseState.batches.where(
+        (b) => b.items.any((bi) => bi.orderItemId == item.id),
+      ).firstOrNull;
+
+      if (batch != null) {
+        switch (batch.status) {
+          case PurchaseBatchStatus.purchased:
+            return const StoreeBadge(label: '🛍️ تم الشراء من الموقع', type: BadgeType.primary);
+          case PurchaseBatchStatus.shipping:
+            return const StoreeBadge(label: '✈️ قيد الشحن الدولي', type: BadgeType.warning);
+          case PurchaseBatchStatus.arrived:
+            return const StoreeBadge(label: '📦 وصل للمقر', type: BadgeType.success);
+          case PurchaseBatchStatus.cancelled:
+            return const StoreeBadge(label: '❌ ملغي من المورد', type: BadgeType.error);
+        }
+      }
+    }
+
+    return const StoreeBadge(
+      label: '🛍️ تم الشراء',
+      type: BadgeType.primary,
+    );
+  }
+
+  void _promptDeliveryPayment(BuildContext context, CustomerOrder order) {
+    final customerState = context.read<CustomerCubit>().state;
+    final cust = (customerState is CustomerLoaded)
+        ? customerState.customers.where((c) => c.id == order.customerId).firstOrNull
+        : null;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('تحصيل الدفعة عند الاستلام (COD)'),
+        content: Text(
+          'تم تأكيد تسليم الطلبية!\n\nيوجد مبلغ متبقي على العميلة قدره (${order.remainingAmount.format()}).\nهل قامت العميلة بسداده للمندوبة (كاش أو بنك) وترغبين بتسجيل الدفعة الآن؟',
+        ),
+        actions: [
+          TextButton(
+            child: const Text('تأكيد التسليم فقط (آجل)'),
+            onPressed: () => Navigator.pop(dialogCtx),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('تسجيل الدفعة الآن'),
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              RecordPaymentDialog.show(
+                context,
+                preselectedCustomer: cust,
+                preselectedOrder: order,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
+

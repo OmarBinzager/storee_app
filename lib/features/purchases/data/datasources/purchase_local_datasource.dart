@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
+import '../../../orders/domain/entities/customer_order.dart';
 import '../../../orders/domain/entities/order_item.dart';
 import '../../domain/entities/purchase_batch.dart';
 
@@ -19,6 +20,7 @@ abstract class PurchaseLocalDataSource {
     String? payingWalletId,
     DateTime? purchasedAt,
   });
+  Future<void> updateBatchStatus(String batchId, PurchaseBatchStatus newStatus);
 }
 
 class PurchaseLocalDataSourceImpl implements PurchaseLocalDataSource {
@@ -72,6 +74,7 @@ class PurchaseLocalDataSourceImpl implements PurchaseLocalDataSource {
           discounts: Money(amountMinor: b.discountsMinor, currency: currency),
           items: allocatedItems,
           purchasedAt: b.purchasedAt,
+          status: _parseBatchStatus(b.status),
         ),
       );
     }
@@ -138,6 +141,7 @@ class PurchaseLocalDataSourceImpl implements PurchaseLocalDataSource {
       discounts: discounts,
       items: items,
       purchasedAt: effectivePurchasedAt,
+      status: PurchaseBatchStatus.purchased,
     );
 
     await database.transaction(() async {
@@ -150,7 +154,7 @@ class PurchaseLocalDataSourceImpl implements PurchaseLocalDataSource {
               currencyCode: currency.code,
               extraCostsMinor: Value(extraCosts.amountMinor),
               discountsMinor: Value(discounts.amountMinor),
-              status: 'purchased',
+              status: PurchaseBatchStatus.purchased.name,
               purchasedAt: effectivePurchasedAt,
               createdAt: Value(now),
             ),
@@ -193,7 +197,7 @@ class PurchaseLocalDataSourceImpl implements PurchaseLocalDataSource {
                 ..where((t) => t.id.equals(orderItem.orderId)))
               .write(
             CustomerOrdersTableCompanion(
-              executionStatus: const Value('purchased'),
+              executionStatus: Value(OrderExecutionStatus.purchased.name),
               updatedAt: Value(now),
             ),
           );
@@ -245,5 +249,110 @@ class PurchaseLocalDataSourceImpl implements PurchaseLocalDataSource {
     });
 
     return batch;
+  }
+
+  @override
+  Future<void> updateBatchStatus(String batchId, PurchaseBatchStatus newStatus) async {
+    final now = DateTime.now();
+
+    await database.transaction(() async {
+      // 1. Update purchase batch status
+      await (database.update(database.purchaseBatchesTable)..where((t) => t.id.equals(batchId))).write(
+        PurchaseBatchesTableCompanion(
+          status: Value(newStatus.name),
+        ),
+      );
+
+      // 2. Find all affected order items
+      final batchItemRows = await (database.select(database.purchaseBatchItemsTable)
+            ..where((t) => t.batchId.equals(batchId)))
+          .get();
+
+      final affectedOrderIds = <String>{};
+      for (final bi in batchItemRows) {
+        final orderItemRow = await (database.select(database.orderItemsTable)
+              ..where((t) => t.id.equals(bi.orderItemId)))
+            .getSingleOrNull();
+        if (orderItemRow != null) {
+          affectedOrderIds.add(orderItemRow.orderId);
+        }
+      }
+
+      // 3. For each affected order, determine its new execution status
+      for (final orderId in affectedOrderIds) {
+        final allItemsInOrder = await (database.select(database.orderItemsTable)
+              ..where((t) => t.orderId.equals(orderId)))
+          .get();
+
+        final orderRow = await (database.select(database.customerOrdersTable)
+              ..where((t) => t.id.equals(orderId)))
+          .getSingleOrNull();
+
+        if (orderRow == null) continue;
+
+        // Skip orders that are already terminal (delivered or cancelled)
+        if (orderRow.executionStatus == OrderExecutionStatus.delivered.name ||
+            orderRow.executionStatus == OrderExecutionStatus.cancelled.name) {
+          continue;
+        }
+
+        // Check the batch status for each item in this order
+        var unassignedCount = 0;
+        var shippingCount = 0;
+        var arrivedCount = 0;
+
+        for (final item in allItemsInOrder) {
+          final batchItem = await (database.select(database.purchaseBatchItemsTable)
+                ..where((t) => t.orderItemId.equals(item.id)))
+              .getSingleOrNull();
+
+          if (batchItem == null) {
+            unassignedCount++;
+          } else {
+            final parentBatch = await (database.select(database.purchaseBatchesTable)
+                  ..where((t) => t.id.equals(batchItem.batchId)))
+                .getSingleOrNull();
+
+            final batchStatus = parentBatch?.status ?? PurchaseBatchStatus.purchased.name;
+            if (batchStatus == PurchaseBatchStatus.arrived.name) {
+              arrivedCount++;
+            } else if (batchStatus == PurchaseBatchStatus.shipping.name) {
+              shippingCount++;
+            }
+          }
+        }
+
+        String determinedStatus;
+        if (arrivedCount == allItemsInOrder.length && allItemsInOrder.isNotEmpty) {
+          // ALL items have arrived at the boutique! Order is ready for delivery!
+          determinedStatus = OrderExecutionStatus.readyToDeliver.name;
+        } else if (arrivedCount > 0) {
+          // Some items arrived, others still in transit or unassigned
+          determinedStatus = OrderExecutionStatus.partiallyArrived.name;
+        } else if (shippingCount > 0) {
+          // Some or all items in transit
+          determinedStatus = OrderExecutionStatus.shipping.name;
+        } else if (unassignedCount == 0) {
+          // All items purchased
+          determinedStatus = OrderExecutionStatus.purchased.name;
+        } else {
+          determinedStatus = orderRow.executionStatus;
+        }
+
+        await (database.update(database.customerOrdersTable)..where((t) => t.id.equals(orderId))).write(
+          CustomerOrdersTableCompanion(
+            executionStatus: Value(determinedStatus),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+    });
+  }
+
+  PurchaseBatchStatus _parseBatchStatus(String status) {
+    return PurchaseBatchStatus.values.firstWhere(
+      (e) => e.name == status,
+      orElse: () => PurchaseBatchStatus.purchased,
+    );
   }
 }

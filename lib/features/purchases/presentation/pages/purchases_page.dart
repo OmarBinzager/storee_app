@@ -6,6 +6,8 @@ import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
 import '../../../../core/widgets/storee_empty_state.dart';
+import '../../../orders/presentation/bloc/order_bloc.dart';
+import '../../../orders/presentation/bloc/order_event.dart';
 import '../../domain/entities/purchase_batch.dart';
 import '../cubit/purchase_cubit.dart';
 import '../cubit/purchase_state.dart';
@@ -81,6 +83,19 @@ class PurchasesPage extends StatelessWidget {
     );
   }
 
+  BadgeType _badgeTypeForStatus(PurchaseBatchStatus status) {
+    switch (status) {
+      case PurchaseBatchStatus.purchased:
+        return BadgeType.primary;
+      case PurchaseBatchStatus.shipping:
+        return BadgeType.warning;
+      case PurchaseBatchStatus.arrived:
+        return BadgeType.success;
+      case PurchaseBatchStatus.cancelled:
+        return BadgeType.error;
+    }
+  }
+
   Widget _buildBatchCard(BuildContext context, PurchaseBatch batch) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.space12),
@@ -93,33 +108,75 @@ class PurchasesPage extends StatelessWidget {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppDimensions.space8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: AppDimensions.roundedMedium,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppDimensions.space8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: AppDimensions.roundedMedium,
+                        ),
+                        child: const Icon(Icons.storefront_outlined, color: AppColors.primary, size: 20),
                       ),
-                      child: const Icon(Icons.storefront_outlined, color: AppColors.primary, size: 20),
+                      const SizedBox(width: AppDimensions.space12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(batch.storeName, style: AppTextStyles.headingSmall, overflow: TextOverflow.ellipsis),
+                            if (batch.invoiceReference != null)
+                              Text(
+                                batch.invoiceReference!,
+                                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StoreeBadge(
+                      label: batch.status.labelAr,
+                      type: _badgeTypeForStatus(batch.status),
                     ),
-                    const SizedBox(width: AppDimensions.space12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(batch.storeName, style: AppTextStyles.headingSmall),
-                        if (batch.invoiceReference != null)
-                          Text(
-                            batch.invoiceReference!,
-                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    PopupMenuButton<PurchaseBatchStatus>(
+                      icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textSecondary),
+                      tooltip: 'تغيير حالة الشحنة',
+                      onSelected: (newStatus) async {
+                        final success = await context.read<PurchaseCubit>().updateBatchStatus(batch.id, newStatus);
+                        if (success && context.mounted) {
+                          context.read<OrderBloc>().add(const LoadOrdersEvent());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('تم تحديث الشحنة إلى (${newStatus.labelAr}) وتحديث طلبيات العميلات آلياً'),
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => PurchaseBatchStatus.values.map((s) {
+                        return PopupMenuItem(
+                          value: s,
+                          child: Row(
+                            children: [
+                              Icon(
+                                s == batch.status ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                                color: s == batch.status ? AppColors.primary : AppColors.textTertiary,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(s.labelAr, style: AppTextStyles.bodyMedium),
+                            ],
                           ),
-                      ],
+                        );
+                      }).toList(),
                     ),
                   ],
-                ),
-                StoreeBadge(
-                  label: '${batch.items.length} منتجات',
-                  type: BadgeType.primary,
                 ),
               ],
             ),
@@ -128,9 +185,17 @@ class PurchasesPage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'تاريخ الشراء: ${_formatDate(batch.purchasedAt)}',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  Row(
+                    children: [
+                      Text(
+                        '${batch.items.length} منتجات • ',
+                        style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        _formatDate(batch.purchasedAt),
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
                   ),
                   Text(
                     batch.finalTotalCost.format(),

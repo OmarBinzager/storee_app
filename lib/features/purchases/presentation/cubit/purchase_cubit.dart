@@ -59,4 +59,18 @@ class PurchaseCubit extends Cubit<PurchaseState> {
       },
     );
   }
+
+  Future<bool> updateBatchStatus(String batchId, PurchaseBatchStatus newStatus) async {
+    final result = await repository.updateBatchStatus(batchId, newStatus);
+    return result.fold(
+      (failure) {
+        emit(PurchaseError(failure.message));
+        return false;
+      },
+      (_) {
+        loadBatches();
+        return true;
+      },
+    );
+  }
 }

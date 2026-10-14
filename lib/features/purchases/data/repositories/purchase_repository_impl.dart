@@ -59,4 +59,14 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       return Left(DatabaseFailure('فشل في إنشاء دفعة الشراء الجماعي: $e'));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> updateBatchStatus(String batchId, PurchaseBatchStatus newStatus) async {
+    try {
+      await localDataSource.updateBatchStatus(batchId, newStatus);
+      return const Right(null);
+    } catch (e) {
+      return Left(DatabaseFailure('فشل في تحديث حالة فاتورة الشراء: $e'));
+    }
+  }
 }

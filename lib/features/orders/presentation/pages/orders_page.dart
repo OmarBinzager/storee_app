@@ -252,9 +252,12 @@ class OrdersPage extends StatelessWidget {
       OrderExecutionStatus.confirmed => BadgeType.primary,
       OrderExecutionStatus.purchased => BadgeType.warning,
       OrderExecutionStatus.shipping => BadgeType.warning,
+      OrderExecutionStatus.partiallyArrived => BadgeType.warning,
       OrderExecutionStatus.arrived => BadgeType.info,
       OrderExecutionStatus.readyToDeliver => BadgeType.primary,
+      OrderExecutionStatus.outForDelivery => BadgeType.info,
       OrderExecutionStatus.delivered => BadgeType.success,
+      OrderExecutionStatus.deliveryRescheduled => BadgeType.error,
       OrderExecutionStatus.cancelled => BadgeType.error,
     };
   }

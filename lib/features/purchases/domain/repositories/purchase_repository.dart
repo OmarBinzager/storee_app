@@ -23,4 +23,8 @@ abstract class PurchaseRepository {
     String? payingWalletId,
     DateTime? purchasedAt,
   });
+
+  /// Updates the status of a purchase batch (e.g. shipping, arrived, cancelled)
+  /// and automatically synchronizes the status of affected customer orders.
+  Future<Either<Failure, void>> updateBatchStatus(String batchId, PurchaseBatchStatus newStatus);
 }

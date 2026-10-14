@@ -13,7 +13,6 @@ import '../../../../core/widgets/storee_text_field.dart';
 import '../../../orders/domain/entities/order_item.dart';
 import '../../../orders/presentation/bloc/order_bloc.dart';
 import '../../../orders/presentation/bloc/order_event.dart';
-import '../../../wallets/domain/entities/wallet.dart';
 import '../../../wallets/presentation/cubit/wallet_cubit.dart';
 import '../../../wallets/presentation/cubit/wallet_state.dart';
 import '../../domain/entities/purchase_batch.dart';
@@ -58,7 +57,7 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
   final _discountsController = TextEditingController(text: '0.0');
 
   Currency _selectedCurrency = Currency.sar;
-  Wallet? _payingWallet;
+  String? _payingWalletId;
   bool _payFromWallet = true;
 
   // Track item base cost inputs: Map of orderItemId -> TextEditingController
@@ -82,7 +81,10 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
   }
 
   List<BatchItemAllocated> _calculateAllocations(List<OrderItem> allUnassigned) {
-    final selectedItems = allUnassigned.where((i) => _selectedItemIds.contains(i.id)).toList();
+    // Strictly isolate to items matching the batch's currency
+    final selectedItems = allUnassigned
+        .where((i) => _selectedItemIds.contains(i.id) && i.saleUnitPrice.currency == _selectedCurrency)
+        .toList();
     if (selectedItems.isEmpty) return [];
 
     final shippingMajor = double.tryParse(_shippingController.text) ?? 0.0;
@@ -93,7 +95,8 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
 
     final rawInputs = selectedItems.map((item) {
       final ctrl = _baseCostControllers[item.id];
-      final baseMajor = double.tryParse(ctrl?.text ?? '') ?? item.saleUnitPrice.toMajor * 0.7; // default 70% of sale price
+      final enteredMajor = double.tryParse(ctrl?.text ?? '');
+      final baseMajor = enteredMajor ?? (item.saleUnitPrice.currency == _selectedCurrency ? item.saleUnitPrice.toMajor * 0.7 : 0.0);
       final baseMoney = Money.fromMajor(baseMajor, _selectedCurrency);
 
       return (
@@ -114,9 +117,16 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
   Future<void> _submit(List<OrderItem> allUnassigned) async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedItemIds.isEmpty) {
+    final matchingSelected = allUnassigned
+        .where((i) => _selectedItemIds.contains(i.id) && i.saleUnitPrice.currency == _selectedCurrency)
+        .toList();
+
+    if (matchingSelected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء اختيار عنصر واحد على الأقل للشراء'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('الرجاء اختيار عنصر واحد على الأقل بعملة ${_selectedCurrency.code} للشراء'),
+          backgroundColor: AppColors.error,
+        ),
       );
       return;
     }
@@ -138,7 +148,7 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
           extraCosts: shippingMoney,
           discounts: discountMoney,
           items: allocatedItems,
-          payingWalletId: (_payFromWallet && _payingWallet != null) ? _payingWallet!.id : null,
+          payingWalletId: (_payFromWallet && _payingWalletId != null) ? _payingWalletId : null,
         );
 
     if (mounted) {
@@ -208,7 +218,13 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('فاتورة شراء جماعي جديدة', style: AppTextStyles.headingSmall),
+                      Expanded(
+                        child: Text(
+                          'فاتورة شراء جماعي جديدة',
+                          style: AppTextStyles.headingSmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close_rounded),
                         onPressed: () => Navigator.pop(context),
@@ -251,7 +267,15 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                                     return DropdownMenuItem(value: c, child: Text(c.code, style: AppTextStyles.bodyMedium));
                                   }).toList(),
                                   onChanged: (c) {
-                                    if (c != null) setState(() => _selectedCurrency = c);
+                                    if (c != null) {
+                                      setState(() {
+                                        _selectedCurrency = c;
+                                        _selectedItemIds.removeWhere((id) {
+                                          final item = unassigned.where((i) => i.id == id).firstOrNull;
+                                          return item != null && item.saleUnitPrice.currency != c;
+                                        });
+                                      });
+                                    }
                                   },
                                 ),
                               ),
@@ -294,31 +318,72 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                   ),
                   const SizedBox(height: AppDimensions.space20),
                   // Select unassigned items to purchase
-                  Text('اختيار المنتجات للشراء الجماعي', style: AppTextStyles.headingSmall),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('اختيار المنتجات للشراء الجماعي', style: AppTextStyles.headingSmall),
+                      StoreeBadge(
+                        label: 'عملة الفاتورة: ${_selectedCurrency.code}',
+                        type: BadgeType.info,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: AppDimensions.space4),
                   Text(
-                    'حددي المنتجات وأدخلي سعر الشراء للقطعة. سيتم توزيع الشحن والخصم نسبياً عليها.',
+                    'تظهر فقط منتجات الطلبيات المطابقة لعملة الفاتورة (${_selectedCurrency.code}) لمنع خلط العملات.',
                     style: AppTextStyles.bodySmall,
                   ),
                   const SizedBox(height: AppDimensions.space12),
-                  if (unassigned.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(AppDimensions.space16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: AppDimensions.roundedMedium,
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'لا توجد عناصر بانتظار الشراء حالياً. أنشئي طلبات جديدة أولاً.',
-                          style: AppTextStyles.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                  else
-                    ...unassigned.map((item) => _buildItemSelectionCard(item)),
+                  Builder(
+                    builder: (context) {
+                      final matchingItems = unassigned
+                          .where((item) => item.saleUnitPrice.currency == _selectedCurrency)
+                          .toList();
+                      final otherItemsCount = unassigned.length - matchingItems.length;
+
+                      if (matchingItems.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(AppDimensions.space16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: AppDimensions.roundedMedium,
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'لا توجد منتجات بانتظار الشراء بعملة ${_selectedCurrency.code} حالياً.',
+                                style: AppTextStyles.bodySmall,
+                                textAlign: TextAlign.center,
+                              ),
+                              if (otherItemsCount > 0) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '💡 يوجد $otherItemsCount منتجات بانتظار الشراء بعملات أخرى. يمكنك تغيير عملة الفاتورة من القائمة بالأعلى.',
+                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          if (otherItemsCount > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: AppDimensions.space8),
+                              child: Text(
+                                '💡 يوجد $otherItemsCount منتجات أخرى بعملات مختلفة مستبعدة تلقائياً لتفادي خلط العملات.',
+                                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                              ),
+                            ),
+                          ...matchingItems.map((item) => _buildItemSelectionCard(item)),
+                        ],
+                      );
+                    },
+                  ),
                   const SizedBox(height: AppDimensions.space16),
                   // Allocated preview banner
                   if (_selectedItemIds.isNotEmpty) ...[
@@ -356,14 +421,37 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                           ),
                           const SizedBox(height: 6),
                           ...allocatedPreview.map((a) => Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('• ${a.title}', style: AppTextStyles.bodySmall),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '• ${a.title}',
+                                            style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: AppDimensions.space8),
+                                        Text(
+                                          'الإجمالي: ${a.totalCost.format()}',
+                                          style: AppTextStyles.bodySmall.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
                                     Text(
-                                      'حصة الشحن: ${a.allocatedExtraCost.format()} | الإجمالي: ${a.totalCost.format()}',
-                                      style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                                      'حصة الشحن والرسوم: ${a.allocatedExtraCost.format()}',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -486,7 +574,9 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
     return BlocBuilder<WalletCubit, WalletState>(
       builder: (context, state) {
         if (state is WalletLoaded && state.wallets.isNotEmpty) {
-          _payingWallet ??= state.wallets.first;
+          if (_payingWalletId == null || !state.wallets.any((w) => w.id == _payingWalletId)) {
+            _payingWalletId = state.wallets.first.id;
+          }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,17 +598,18 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                     border: Border.all(color: AppColors.border),
                   ),
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<Wallet>(
-                      value: _payingWallet,
+                    child: DropdownButton<String>(
+                      value: _payingWalletId,
                       isExpanded: true,
                       items: state.wallets.map((w) {
-                        return DropdownMenuItem(
-                          value: w,
-                          child: Text('${w.name} (${w.type.labelAr})', style: AppTextStyles.bodyMedium),
+                        final balance = w.getBalanceFor(_selectedCurrency);
+                        return DropdownMenuItem<String>(
+                          value: w.id,
+                          child: Text('${w.name} (${w.type.labelAr}) - الرصيد: ${balance.format()}', style: AppTextStyles.bodyMedium),
                         );
                       }).toList(),
-                      onChanged: (w) {
-                        if (w != null) setState(() => _payingWallet = w);
+                      onChanged: (walletId) {
+                        if (walletId != null) setState(() => _payingWalletId = walletId);
                       },
                     ),
                   ),

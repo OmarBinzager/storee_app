@@ -2,6 +2,20 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 
+enum PurchaseBatchStatus {
+  purchased,
+  shipping,
+  arrived,
+  cancelled;
+
+  String get labelAr => switch (this) {
+        PurchaseBatchStatus.purchased => 'تم الشراء من المتجر',
+        PurchaseBatchStatus.shipping => 'قيد الشحن الدولي',
+        PurchaseBatchStatus.arrived => 'وصلت الشحنة للمقر',
+        PurchaseBatchStatus.cancelled => 'ملغية',
+      };
+}
+
 class BatchItemAllocated extends Equatable {
   final String orderItemId;
   final String title;
@@ -41,6 +55,7 @@ class PurchaseBatch extends Equatable {
   final Money discounts; // Store discounts applied to the batch
   final List<BatchItemAllocated> items;
   final DateTime purchasedAt;
+  final PurchaseBatchStatus status;
 
   const PurchaseBatch({
     required this.id,
@@ -51,6 +66,7 @@ class PurchaseBatch extends Equatable {
     required this.discounts,
     required this.items,
     required this.purchasedAt,
+    this.status = PurchaseBatchStatus.purchased,
   });
 
   Money get totalBaseCost {
@@ -73,5 +89,6 @@ class PurchaseBatch extends Equatable {
         discounts,
         items,
         purchasedAt,
+        status,
       ];
 }

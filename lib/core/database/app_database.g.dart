@@ -2769,6 +2769,17 @@ class $OrderItemsTableTable extends OrderItemsTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _imagePathMeta = const VerificationMeta(
+    'imagePath',
+  );
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+    'image_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
@@ -2782,6 +2793,15 @@ class $OrderItemsTableTable extends OrderItemsTable
   @override
   late final GeneratedColumn<String> size = GeneratedColumn<String>(
     'size',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -2837,8 +2857,10 @@ class $OrderItemsTableTable extends OrderItemsTable
     orderId,
     productId,
     title,
+    imagePath,
     color,
     size,
+    notes,
     quantity,
     saleUnitPriceMinor,
     unitCostMinor,
@@ -2883,6 +2905,12 @@ class $OrderItemsTableTable extends OrderItemsTable
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
+    if (data.containsKey('image_path')) {
+      context.handle(
+        _imagePathMeta,
+        imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta),
+      );
+    }
     if (data.containsKey('color')) {
       context.handle(
         _colorMeta,
@@ -2893,6 +2921,12 @@ class $OrderItemsTableTable extends OrderItemsTable
       context.handle(
         _sizeMeta,
         size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
     if (data.containsKey('quantity')) {
@@ -2955,6 +2989,10 @@ class $OrderItemsTableTable extends OrderItemsTable
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      imagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_path'],
+      ),
       color: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}color'],
@@ -2962,6 +3000,10 @@ class $OrderItemsTableTable extends OrderItemsTable
       size: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}size'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
       ),
       quantity: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -2994,8 +3036,10 @@ class OrderItemsTableData extends DataClass
   final String orderId;
   final String? productId;
   final String title;
+  final String? imagePath;
   final String? color;
   final String? size;
+  final String? notes;
   final int quantity;
   final int saleUnitPriceMinor;
   final int? unitCostMinor;
@@ -3005,8 +3049,10 @@ class OrderItemsTableData extends DataClass
     required this.orderId,
     this.productId,
     required this.title,
+    this.imagePath,
     this.color,
     this.size,
+    this.notes,
     required this.quantity,
     required this.saleUnitPriceMinor,
     this.unitCostMinor,
@@ -3021,11 +3067,17 @@ class OrderItemsTableData extends DataClass
       map['product_id'] = Variable<String>(productId);
     }
     map['title'] = Variable<String>(title);
+    if (!nullToAbsent || imagePath != null) {
+      map['image_path'] = Variable<String>(imagePath);
+    }
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<String>(color);
     }
     if (!nullToAbsent || size != null) {
       map['size'] = Variable<String>(size);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     map['quantity'] = Variable<int>(quantity);
     map['sale_unit_price_minor'] = Variable<int>(saleUnitPriceMinor);
@@ -3048,10 +3100,16 @@ class OrderItemsTableData extends DataClass
           ? const Value.absent()
           : Value(productId),
       title: Value(title),
+      imagePath: imagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagePath),
       color: color == null && nullToAbsent
           ? const Value.absent()
           : Value(color),
       size: size == null && nullToAbsent ? const Value.absent() : Value(size),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       quantity: Value(quantity),
       saleUnitPriceMinor: Value(saleUnitPriceMinor),
       unitCostMinor: unitCostMinor == null && nullToAbsent
@@ -3073,8 +3131,10 @@ class OrderItemsTableData extends DataClass
       orderId: serializer.fromJson<String>(json['orderId']),
       productId: serializer.fromJson<String?>(json['productId']),
       title: serializer.fromJson<String>(json['title']),
+      imagePath: serializer.fromJson<String?>(json['imagePath']),
       color: serializer.fromJson<String?>(json['color']),
       size: serializer.fromJson<String?>(json['size']),
+      notes: serializer.fromJson<String?>(json['notes']),
       quantity: serializer.fromJson<int>(json['quantity']),
       saleUnitPriceMinor: serializer.fromJson<int>(json['saleUnitPriceMinor']),
       unitCostMinor: serializer.fromJson<int?>(json['unitCostMinor']),
@@ -3091,8 +3151,10 @@ class OrderItemsTableData extends DataClass
       'orderId': serializer.toJson<String>(orderId),
       'productId': serializer.toJson<String?>(productId),
       'title': serializer.toJson<String>(title),
+      'imagePath': serializer.toJson<String?>(imagePath),
       'color': serializer.toJson<String?>(color),
       'size': serializer.toJson<String?>(size),
+      'notes': serializer.toJson<String?>(notes),
       'quantity': serializer.toJson<int>(quantity),
       'saleUnitPriceMinor': serializer.toJson<int>(saleUnitPriceMinor),
       'unitCostMinor': serializer.toJson<int?>(unitCostMinor),
@@ -3107,8 +3169,10 @@ class OrderItemsTableData extends DataClass
     String? orderId,
     Value<String?> productId = const Value.absent(),
     String? title,
+    Value<String?> imagePath = const Value.absent(),
     Value<String?> color = const Value.absent(),
     Value<String?> size = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
     int? quantity,
     int? saleUnitPriceMinor,
     Value<int?> unitCostMinor = const Value.absent(),
@@ -3118,8 +3182,10 @@ class OrderItemsTableData extends DataClass
     orderId: orderId ?? this.orderId,
     productId: productId.present ? productId.value : this.productId,
     title: title ?? this.title,
+    imagePath: imagePath.present ? imagePath.value : this.imagePath,
     color: color.present ? color.value : this.color,
     size: size.present ? size.value : this.size,
+    notes: notes.present ? notes.value : this.notes,
     quantity: quantity ?? this.quantity,
     saleUnitPriceMinor: saleUnitPriceMinor ?? this.saleUnitPriceMinor,
     unitCostMinor: unitCostMinor.present
@@ -3135,8 +3201,10 @@ class OrderItemsTableData extends DataClass
       orderId: data.orderId.present ? data.orderId.value : this.orderId,
       productId: data.productId.present ? data.productId.value : this.productId,
       title: data.title.present ? data.title.value : this.title,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       color: data.color.present ? data.color.value : this.color,
       size: data.size.present ? data.size.value : this.size,
+      notes: data.notes.present ? data.notes.value : this.notes,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       saleUnitPriceMinor: data.saleUnitPriceMinor.present
           ? data.saleUnitPriceMinor.value
@@ -3157,8 +3225,10 @@ class OrderItemsTableData extends DataClass
           ..write('orderId: $orderId, ')
           ..write('productId: $productId, ')
           ..write('title: $title, ')
+          ..write('imagePath: $imagePath, ')
           ..write('color: $color, ')
           ..write('size: $size, ')
+          ..write('notes: $notes, ')
           ..write('quantity: $quantity, ')
           ..write('saleUnitPriceMinor: $saleUnitPriceMinor, ')
           ..write('unitCostMinor: $unitCostMinor, ')
@@ -3173,8 +3243,10 @@ class OrderItemsTableData extends DataClass
     orderId,
     productId,
     title,
+    imagePath,
     color,
     size,
+    notes,
     quantity,
     saleUnitPriceMinor,
     unitCostMinor,
@@ -3188,8 +3260,10 @@ class OrderItemsTableData extends DataClass
           other.orderId == this.orderId &&
           other.productId == this.productId &&
           other.title == this.title &&
+          other.imagePath == this.imagePath &&
           other.color == this.color &&
           other.size == this.size &&
+          other.notes == this.notes &&
           other.quantity == this.quantity &&
           other.saleUnitPriceMinor == this.saleUnitPriceMinor &&
           other.unitCostMinor == this.unitCostMinor &&
@@ -3201,8 +3275,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
   final Value<String> orderId;
   final Value<String?> productId;
   final Value<String> title;
+  final Value<String?> imagePath;
   final Value<String?> color;
   final Value<String?> size;
+  final Value<String?> notes;
   final Value<int> quantity;
   final Value<int> saleUnitPriceMinor;
   final Value<int?> unitCostMinor;
@@ -3213,8 +3289,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
     this.orderId = const Value.absent(),
     this.productId = const Value.absent(),
     this.title = const Value.absent(),
+    this.imagePath = const Value.absent(),
     this.color = const Value.absent(),
     this.size = const Value.absent(),
+    this.notes = const Value.absent(),
     this.quantity = const Value.absent(),
     this.saleUnitPriceMinor = const Value.absent(),
     this.unitCostMinor = const Value.absent(),
@@ -3226,8 +3304,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
     required String orderId,
     this.productId = const Value.absent(),
     required String title,
+    this.imagePath = const Value.absent(),
     this.color = const Value.absent(),
     this.size = const Value.absent(),
+    this.notes = const Value.absent(),
     this.quantity = const Value.absent(),
     required int saleUnitPriceMinor,
     this.unitCostMinor = const Value.absent(),
@@ -3242,8 +3322,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
     Expression<String>? orderId,
     Expression<String>? productId,
     Expression<String>? title,
+    Expression<String>? imagePath,
     Expression<String>? color,
     Expression<String>? size,
+    Expression<String>? notes,
     Expression<int>? quantity,
     Expression<int>? saleUnitPriceMinor,
     Expression<int>? unitCostMinor,
@@ -3255,8 +3337,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
       if (orderId != null) 'order_id': orderId,
       if (productId != null) 'product_id': productId,
       if (title != null) 'title': title,
+      if (imagePath != null) 'image_path': imagePath,
       if (color != null) 'color': color,
       if (size != null) 'size': size,
+      if (notes != null) 'notes': notes,
       if (quantity != null) 'quantity': quantity,
       if (saleUnitPriceMinor != null)
         'sale_unit_price_minor': saleUnitPriceMinor,
@@ -3272,8 +3356,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
     Value<String>? orderId,
     Value<String?>? productId,
     Value<String>? title,
+    Value<String?>? imagePath,
     Value<String?>? color,
     Value<String?>? size,
+    Value<String?>? notes,
     Value<int>? quantity,
     Value<int>? saleUnitPriceMinor,
     Value<int?>? unitCostMinor,
@@ -3285,8 +3371,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
       orderId: orderId ?? this.orderId,
       productId: productId ?? this.productId,
       title: title ?? this.title,
+      imagePath: imagePath ?? this.imagePath,
       color: color ?? this.color,
       size: size ?? this.size,
+      notes: notes ?? this.notes,
       quantity: quantity ?? this.quantity,
       saleUnitPriceMinor: saleUnitPriceMinor ?? this.saleUnitPriceMinor,
       unitCostMinor: unitCostMinor ?? this.unitCostMinor,
@@ -3311,11 +3399,17 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
     if (size.present) {
       map['size'] = Variable<String>(size.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
     }
     if (quantity.present) {
       map['quantity'] = Variable<int>(quantity.value);
@@ -3344,8 +3438,10 @@ class OrderItemsTableCompanion extends UpdateCompanion<OrderItemsTableData> {
           ..write('orderId: $orderId, ')
           ..write('productId: $productId, ')
           ..write('title: $title, ')
+          ..write('imagePath: $imagePath, ')
           ..write('color: $color, ')
           ..write('size: $size, ')
+          ..write('notes: $notes, ')
           ..write('quantity: $quantity, ')
           ..write('saleUnitPriceMinor: $saleUnitPriceMinor, ')
           ..write('unitCostMinor: $unitCostMinor, ')
@@ -11261,8 +11357,10 @@ typedef $$OrderItemsTableTableCreateCompanionBuilder =
       required String orderId,
       Value<String?> productId,
       required String title,
+      Value<String?> imagePath,
       Value<String?> color,
       Value<String?> size,
+      Value<String?> notes,
       Value<int> quantity,
       required int saleUnitPriceMinor,
       Value<int?> unitCostMinor,
@@ -11275,8 +11373,10 @@ typedef $$OrderItemsTableTableUpdateCompanionBuilder =
       Value<String> orderId,
       Value<String?> productId,
       Value<String> title,
+      Value<String?> imagePath,
       Value<String?> color,
       Value<String?> size,
+      Value<String?> notes,
       Value<int> quantity,
       Value<int> saleUnitPriceMinor,
       Value<int?> unitCostMinor,
@@ -11386,6 +11486,11 @@ class $$OrderItemsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnFilters(column),
@@ -11393,6 +11498,11 @@ class $$OrderItemsTableTableFilterComposer
 
   ColumnFilters<String> get size => $composableBuilder(
     column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11508,6 +11618,11 @@ class $$OrderItemsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnOrderings(column),
@@ -11515,6 +11630,11 @@ class $$OrderItemsTableTableOrderingComposer
 
   ColumnOrderings<String> get size => $composableBuilder(
     column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -11601,11 +11721,17 @@ class $$OrderItemsTableTableAnnotationComposer
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
 
   GeneratedColumn<String> get size =>
       $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<int> get quantity =>
       $composableBuilder(column: $table.quantity, builder: (column) => column);
@@ -11738,8 +11864,10 @@ class $$OrderItemsTableTableTableManager
                 Value<String> orderId = const Value.absent(),
                 Value<String?> productId = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String?> imagePath = const Value.absent(),
                 Value<String?> color = const Value.absent(),
                 Value<String?> size = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<int> quantity = const Value.absent(),
                 Value<int> saleUnitPriceMinor = const Value.absent(),
                 Value<int?> unitCostMinor = const Value.absent(),
@@ -11750,8 +11878,10 @@ class $$OrderItemsTableTableTableManager
                 orderId: orderId,
                 productId: productId,
                 title: title,
+                imagePath: imagePath,
                 color: color,
                 size: size,
+                notes: notes,
                 quantity: quantity,
                 saleUnitPriceMinor: saleUnitPriceMinor,
                 unitCostMinor: unitCostMinor,
@@ -11764,8 +11894,10 @@ class $$OrderItemsTableTableTableManager
                 required String orderId,
                 Value<String?> productId = const Value.absent(),
                 required String title,
+                Value<String?> imagePath = const Value.absent(),
                 Value<String?> color = const Value.absent(),
                 Value<String?> size = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<int> quantity = const Value.absent(),
                 required int saleUnitPriceMinor,
                 Value<int?> unitCostMinor = const Value.absent(),
@@ -11776,8 +11908,10 @@ class $$OrderItemsTableTableTableManager
                 orderId: orderId,
                 productId: productId,
                 title: title,
+                imagePath: imagePath,
                 color: color,
                 size: size,
+                notes: notes,
                 quantity: quantity,
                 saleUnitPriceMinor: saleUnitPriceMinor,
                 unitCostMinor: unitCostMinor,

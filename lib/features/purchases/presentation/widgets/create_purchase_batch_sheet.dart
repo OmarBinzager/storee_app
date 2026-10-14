@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -389,6 +390,7 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Checkbox(
                   value: isSelected,
@@ -403,11 +405,35 @@ class _CreatePurchaseBatchSheetState extends State<CreatePurchaseBatchSheet> {
                     });
                   },
                 ),
+                if (item.imagePath != null && File(item.imagePath!).existsSync()) ...[
+                  ClipRRect(
+                    borderRadius: AppDimensions.roundedSmall,
+                    child: Image.file(
+                      File(item.imagePath!),
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 44,
+                        height: 44,
+                        color: AppColors.background,
+                        child: const Icon(Icons.broken_image_outlined, size: 20, color: AppColors.textTertiary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.space8),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.title, style: AppTextStyles.subtitleMedium),
+                      if (item.hasOptionalDetails) ...[
+                        Text(
+                          item.specsDescription,
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                        ),
+                      ],
                       Text(
                         'سعر البيع للعميلة: ${item.saleUnitPrice.format()} × ${item.quantity}',
                         style: AppTextStyles.bodySmall,

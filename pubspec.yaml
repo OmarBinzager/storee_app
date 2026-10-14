@@ -45,11 +45,13 @@ dependencies:
   shared_preferences: ^2.5.5
   dartz: ^0.10.1
   drift: ^2.31.0
-  sqlite3_flutter_libs: ^0.6.0+eol
+  sqlite3: ^2.9.4
+  sqlite3_flutter_libs: ^0.5.28
   path: ^1.9.1
   path_provider: ^2.1.5
   crypto: ^3.0.7
   url_launcher: ^6.3.2
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

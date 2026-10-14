@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -130,24 +131,54 @@ class OrderDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (item.imagePath != null && File(item.imagePath!).existsSync()) ...[
+                              ClipRRect(
+                                borderRadius: AppDimensions.roundedSmall,
+                                child: Image.file(
+                                  File(item.imagePath!),
+                                  width: 52,
+                                  height: 52,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    width: 52,
+                                    height: 52,
+                                    color: AppColors.background,
+                                    child: const Icon(Icons.broken_image_outlined, color: AppColors.textTertiary),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppDimensions.space12),
+                            ],
                             Expanded(
-                              child: Text(item.title, style: AppTextStyles.subtitleMedium),
-                            ),
-                            StoreeBadge(
-                              label: '${item.quantity} قطع',
-                              type: BadgeType.primary,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(item.title, style: AppTextStyles.subtitleMedium),
+                                      ),
+                                      StoreeBadge(
+                                        label: '${item.quantity} قطع',
+                                        type: BadgeType.primary,
+                                      ),
+                                    ],
+                                  ),
+                                  if (item.hasOptionalDetails) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.specsDescription,
+                                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                        if (item.color != null || item.size != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'المواصفات: ${[if (item.color != null) "اللون: ${item.color}", if (item.size != null) "المقاس: ${item.size}"].join(" | ")}',
-                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ],
                         const Divider(height: AppDimensions.space16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,

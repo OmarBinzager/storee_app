@@ -43,11 +43,7 @@ class WhatsAppService {
     buffer.writeln('*تفاصيل المنتجات:*');
 
     for (final item in order.items) {
-      final specParts = <String>[];
-      if (item.color != null && item.color!.isNotEmpty) specParts.add(item.color!);
-      if (item.size != null && item.size!.isNotEmpty) specParts.add(item.size!);
-      final specs = specParts.isNotEmpty ? ' (${specParts.join(" / ")})' : '';
-
+      final specs = item.hasOptionalDetails ? ' (${item.specsDescription})' : '';
       buffer.writeln('• ${item.title}$specs');
       buffer.writeln('  الكمية: ${item.quantity} × ${item.saleUnitPrice.format()} = ${item.totalSalePrice.format()}');
     }

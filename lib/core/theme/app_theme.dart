@@ -127,10 +127,24 @@ abstract final class AppTheme {
           return const IconThemeData(color: AppColors.textSecondary);
         }),
       ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: AppTextStyles.bodySmall.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+        ),
+        unselectedLabelStyle: AppTextStyles.bodySmall.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: AppDimensions.roundedMedium),
       ),
       dividerTheme: const DividerThemeData(

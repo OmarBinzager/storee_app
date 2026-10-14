@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
@@ -124,8 +126,10 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
         id: const Uuid().v4(),
         orderId: orderId,
         title: row.titleController.text.trim(),
+        imagePath: row.imagePath,
         color: row.colorController.text.trim().isNotEmpty ? row.colorController.text.trim() : null,
         size: row.sizeController.text.trim().isNotEmpty ? row.sizeController.text.trim() : null,
+        notes: row.notesController.text.trim().isNotEmpty ? row.notesController.text.trim() : null,
         quantity: qty,
         saleUnitPrice: Money.fromMajor(priceMajor, _selectedCurrency),
       );
@@ -398,6 +402,64 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
     );
   }
 
+  Future<void> _pickImageForItem(_NewItemRow row) async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource?>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusMedium)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.space12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('صورة المنتج', style: AppTextStyles.subtitleMedium),
+              const SizedBox(height: AppDimensions.space8),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                title: const Text('اختيار من المعرض (Gallery)'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                title: const Text('التقاط صورة بالكاميرا (Camera)'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              if (row.imagePath != null)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                  title: const Text('إزالة الصورة الحالية', style: TextStyle(color: AppColors.error)),
+                  onTap: () {
+                    setState(() {
+                      row.imagePath = null;
+                    });
+                    Navigator.pop(ctx, null);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source != null) {
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          row.imagePath = picked.path;
+        });
+      }
+    }
+  }
+
   Widget _buildItemRowCard(int index, _NewItemRow row) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppDimensions.space12),
@@ -408,9 +470,68 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Row 1: Image Picker Box + Product Title + Delete
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              GestureDetector(
+                onTap: () => _pickImageForItem(row),
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.35),
+                    borderRadius: AppDimensions.roundedSmall,
+                    border: Border.all(
+                      color: row.imagePath != null ? AppColors.primary : AppColors.border,
+                      width: row.imagePath != null ? 1.5 : 1,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: row.imagePath != null && File(row.imagePath!).existsSync()
+                      ? Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.file(
+                              File(row.imagePath!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.broken_image_outlined,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                color: Colors.black45,
+                                padding: const EdgeInsets.symmetric(vertical: 1),
+                                child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add_a_photo_outlined, size: 20, color: AppColors.primary),
+                            const SizedBox(height: 2),
+                            Text(
+                              'صورة',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                fontSize: 10,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(width: AppDimensions.space12),
               Expanded(
                 child: StoreeTextField(
                   label: 'اسم المنتج *',
@@ -423,10 +544,12 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: AppColors.error),
                   onPressed: () => _removeItemRow(index),
+                  tooltip: 'حذف المنتج',
                 ),
             ],
           ),
-          const SizedBox(height: AppDimensions.space8),
+          const SizedBox(height: AppDimensions.space12),
+          // Row 2: Price & Quantity
           Row(
             children: [
               Expanded(
@@ -451,17 +574,83 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
                   onChanged: (_) => setState(() {}),
                 ),
               ),
-              const SizedBox(width: AppDimensions.space8),
-              Expanded(
-                flex: 1,
-                child: StoreeTextField(
-                  label: 'المقاس',
-                  hint: 'M/L',
-                  controller: row.sizeController,
-                ),
-              ),
             ],
           ),
+          const SizedBox(height: AppDimensions.space8),
+          // Expandable Optional Specifications
+          InkWell(
+            onTap: () {
+              setState(() {
+                row.isExpanded = !row.isExpanded;
+              });
+            },
+            borderRadius: AppDimensions.roundedSmall,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    row.isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    row.isExpanded
+                        ? 'إخفاء المواصفات'
+                        : '+ مواصفات اختيارية (المقاس، اللون، الخامة...)',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (!row.isExpanded &&
+                      (row.sizeController.text.isNotEmpty ||
+                          row.colorController.text.isNotEmpty ||
+                          row.notesController.text.isNotEmpty)) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (row.isExpanded) ...[
+            const SizedBox(height: AppDimensions.space8),
+            Row(
+              children: [
+                Expanded(
+                  child: StoreeTextField(
+                    label: 'المقاس (اختياري)',
+                    hint: 'M, L, 38...',
+                    controller: row.sizeController,
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space8),
+                Expanded(
+                  child: StoreeTextField(
+                    label: 'اللون (اختياري)',
+                    hint: 'كحلي، وردي...',
+                    controller: row.colorController,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.space8),
+            StoreeTextField(
+              label: 'ملاحظات / خامة المنتج (اختياري)',
+              hint: 'خامة كريب ملكي، تطريز يدوي، طول 56...',
+              controller: row.notesController,
+            ),
+          ],
         ],
       ),
     );
@@ -469,11 +658,14 @@ class _AddOrderSheetState extends State<AddOrderSheet> {
 }
 
 class _NewItemRow {
+  String? imagePath;
   final titleController = TextEditingController();
   final priceController = TextEditingController();
   final qtyController = TextEditingController(text: '1');
   final sizeController = TextEditingController();
   final colorController = TextEditingController();
+  final notesController = TextEditingController();
+  bool isExpanded = false;
 
   void dispose() {
     titleController.dispose();
@@ -481,5 +673,6 @@ class _NewItemRow {
     qtyController.dispose();
     sizeController.dispose();
     colorController.dispose();
+    notesController.dispose();
   }
 }

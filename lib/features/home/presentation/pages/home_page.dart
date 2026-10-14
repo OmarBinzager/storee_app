@@ -6,6 +6,8 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
+import '../../../../core/responsive/responsive_layout.dart';
+import '../../../../core/responsive/responsive_center.dart';
 import '../../../backup/presentation/pages/backup_page.dart';
 import '../../../licensing/presentation/pages/license_page.dart';
 import '../../../orders/presentation/widgets/order_detail_sheet.dart';
@@ -67,43 +69,46 @@ class HomePage extends StatelessWidget {
           if (state is HomeLoaded) {
             return RefreshIndicator(
               onRefresh: () async => context.read<HomeCubit>().loadDashboard(),
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.space16,
+              child: ResponsiveCenter(
+                maxWidth: StoreeBreakpoints.maxWideContentWidth,
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.responsiveHorizontalPadding,
                   vertical: AppDimensions.space12,
                 ),
-                children: [
-                  _buildSummaryBanner(context, state),
-                  const SizedBox(height: AppDimensions.space20),
-                  _buildSectionHeader('المستحقات والأرباح (حسب العملة)'),
-                  const SizedBox(height: AppDimensions.space12),
-                  _buildCurrencyKpis(state),
-                  const SizedBox(height: AppDimensions.space20),
-                  _buildSectionHeader('الخزنات النشطة'),
-                  const SizedBox(height: AppDimensions.space12),
-                  _buildWalletsHorizontalList(state),
-                  const SizedBox(height: AppDimensions.space20),
-                  _buildSectionHeader('أحدث الطلبيات'),
-                  const SizedBox(height: AppDimensions.space12),
-                  if (state.recentOrders.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(AppDimensions.space16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: AppDimensions.roundedMedium,
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'لا توجد طلبيات بعد. اضغطي (+) لإنشاء أول طلبية.',
-                          style: AppTextStyles.bodySmall,
+                child: ListView(
+                  children: [
+                    _buildSummaryBanner(context, state),
+                    const SizedBox(height: AppDimensions.space20),
+                    _buildSectionHeader('المستحقات والأرباح (حسب العملة)'),
+                    const SizedBox(height: AppDimensions.space12),
+                    _buildCurrencyKpis(context, state),
+                    const SizedBox(height: AppDimensions.space20),
+                    _buildSectionHeader('الخزنات النشطة'),
+                    const SizedBox(height: AppDimensions.space12),
+                    _buildWalletsHorizontalList(context, state),
+                    const SizedBox(height: AppDimensions.space20),
+                    _buildSectionHeader('أحدث الطلبيات'),
+                    const SizedBox(height: AppDimensions.space12),
+                    if (state.recentOrders.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(AppDimensions.space16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: AppDimensions.roundedMedium,
+                          border: Border.all(color: AppColors.border),
                         ),
-                      ),
-                    )
-                  else
-                    ...state.recentOrders.map((order) => _buildOrderTile(context, order)),
-                  const SizedBox(height: AppDimensions.space32),
-                ],
+                        child: Center(
+                          child: Text(
+                            'لا توجد طلبيات بعد. اضغطي (+) لإنشاء أول طلبية.',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                        ),
+                      )
+                    else
+                      ...state.recentOrders.map((order) => _buildOrderTile(context, order)),
+                    const SizedBox(height: AppDimensions.space32),
+                  ],
+                ),
               ),
             );
           }
@@ -130,10 +135,14 @@ class HomePage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'المهام العاجلة اليوم',
-                style: AppTextStyles.subtitleLarge.copyWith(color: Colors.white),
+              Expanded(
+                child: Text(
+                  'المهام العاجلة اليوم',
+                  style: AppTextStyles.subtitleLarge.copyWith(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: AppDimensions.space8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -179,7 +188,14 @@ class HomePage extends StatelessWidget {
                   children: [
                     const Icon(Icons.call_received_rounded, size: 16, color: AppColors.primary),
                     const SizedBox(width: 4),
-                    Text('مستحقات عند العميلات', style: AppTextStyles.bodySmall),
+                    Expanded(
+                      child: Text(
+                        AppStrings.receivablesFromCustomers,
+                        style: AppTextStyles.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppDimensions.space8),
@@ -206,7 +222,14 @@ class HomePage extends StatelessWidget {
                   children: [
                     const Icon(Icons.trending_up_rounded, size: 16, color: AppColors.success),
                     const SizedBox(width: 4),
-                    Text('أرباح محققة', style: AppTextStyles.bodySmall),
+                    Expanded(
+                      child: Text(
+                        'أرباح محققة',
+                        style: AppTextStyles.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppDimensions.space8),
@@ -313,7 +336,15 @@ class HomePage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(order.customerName, style: AppTextStyles.subtitleLarge),
+                        Expanded(
+                          child: Text(
+                            order.customerName,
+                            style: AppTextStyles.subtitleLarge,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.space8),
                         Text(order.orderNumber, style: AppTextStyles.bodySmall),
                       ],
                     ),
@@ -321,7 +352,14 @@ class HomePage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(order.totalAmount.format(), style: AppTextStyles.moneySmall),
+                        Expanded(
+                          child: Text(
+                            order.totalAmount.format(),
+                            style: AppTextStyles.moneySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.space8),
                         StoreeBadge(
                           label: order.executionStatus.labelAr,
                           type: BadgeType.primary,

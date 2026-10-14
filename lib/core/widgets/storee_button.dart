@@ -70,7 +70,12 @@ class StoreeButton extends StatelessWidget {
 
   Widget _buildContent(Color textColor) {
     if (icon == null) {
-      return Text(label, style: AppTextStyles.buttonLabel.copyWith(color: textColor));
+      return Text(
+        label,
+        style: AppTextStyles.buttonLabel.copyWith(color: textColor),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      );
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -78,7 +83,14 @@ class StoreeButton extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: textColor),
         const SizedBox(width: AppDimensions.space8),
-        Text(label, style: AppTextStyles.buttonLabel.copyWith(color: textColor)),
+        Flexible(
+          child: Text(
+            label,
+            style: AppTextStyles.buttonLabel.copyWith(color: textColor),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
       ],
     );
   }

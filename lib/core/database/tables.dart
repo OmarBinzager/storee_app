@@ -108,8 +108,10 @@ class OrderItemsTable extends Table {
   TextColumn get orderId => text().references(CustomerOrdersTable, #id, onDelete: KeyAction.cascade)();
   TextColumn get productId => text().references(ProductsTable, #id).nullable()();
   TextColumn get title => text().withLength(min: 1, max: 200)();
+  TextColumn get imagePath => text().nullable()();
   TextColumn get color => text().nullable()();
   TextColumn get size => text().nullable()();
+  TextColumn get notes => text().nullable()();
   IntColumn get quantity => integer().withDefault(const Constant(1))();
   IntColumn get saleUnitPriceMinor => integer()();
   IntColumn get unitCostMinor => integer().nullable()();

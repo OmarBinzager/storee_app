@@ -43,9 +43,13 @@ class StoreeBadge extends StatelessWidget {
             Icon(icon, size: 12, color: fgColor),
             const SizedBox(width: AppDimensions.space4),
           ],
-          Text(
-            label,
-            style: AppTextStyles.badgeLabel.copyWith(color: fgColor),
+          Flexible(
+            child: Text(
+              label,
+              style: AppTextStyles.badgeLabel.copyWith(color: fgColor),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

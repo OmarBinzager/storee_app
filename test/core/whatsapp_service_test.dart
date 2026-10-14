@@ -52,7 +52,8 @@ void main() {
       expect(invoiceText.contains('#1042'), true);
       expect(invoiceText.contains('فاطمة الكاف'), true);
       expect(invoiceText.contains('فستان مخمل كحلي راقي'), true);
-      expect(invoiceText.contains('كحلي / L'), true);
+      expect(invoiceText.contains('اللون: كحلي'), true);
+      expect(invoiceText.contains('المقاس: L'), true);
       expect(invoiceText.contains('360.00'), true);
       expect(invoiceText.contains('200.00'), true);
       expect(invoiceText.contains('160.00'), true);

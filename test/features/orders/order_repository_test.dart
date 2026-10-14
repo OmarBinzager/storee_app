@@ -124,5 +124,52 @@ void main() {
         },
       );
     });
+
+    test('persists item imagePath and notes in SQLite and formats specsDescription', () async {
+      final order = CustomerOrder(
+        id: 'ord-photo-test',
+        customerId: 'cust-test',
+        customerName: 'فاطمة الكاف',
+        orderNumber: '#1057',
+        executionStatus: OrderExecutionStatus.newOrder,
+        paymentStatus: OrderPaymentStatus.unpaid,
+        currency: Currency.sar,
+        items: [
+          OrderItem(
+            id: 'item-photo-1',
+            orderId: 'ord-photo-test',
+            title: 'فستان شيفون تركي',
+            imagePath: '/data/user/0/com.storee.app/cache/photo_1.jpg',
+            size: 'L',
+            color: 'وردي',
+            notes: 'خامة شيفون مع بطانة حرير',
+            quantity: 1,
+            saleUnitPrice: Money.fromMajor(150, Currency.sar),
+          ),
+        ],
+        paidAmount: Money.zero(Currency.sar),
+        discountAmount: Money.zero(Currency.sar),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final res = await repository.createOrder(order);
+      expect(res.isRight(), true);
+
+      final listResult = await repository.getOrders();
+      listResult.fold(
+        (_) => fail('Expected orders'),
+        (orders) {
+          final found = orders.firstWhere((o) => o.id == 'ord-photo-test');
+          final item = found.items.first;
+          expect(item.imagePath, '/data/user/0/com.storee.app/cache/photo_1.jpg');
+          expect(item.size, 'L');
+          expect(item.color, 'وردي');
+          expect(item.notes, 'خامة شيفون مع بطانة حرير');
+          expect(item.hasOptionalDetails, true);
+          expect(item.specsDescription, 'اللون: وردي • المقاس: L • خامة شيفون مع بطانة حرير');
+        },
+      );
+    });
   });
 }

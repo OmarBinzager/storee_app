@@ -6,6 +6,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
+import '../../../backup/presentation/pages/backup_page.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 
@@ -27,8 +28,13 @@ class HomePage extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
+            icon: const Icon(Icons.cloud_sync_outlined),
+            tooltip: 'النسخ الاحتياطي والاستعادة',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BackupPage()),
+              );
+            },
           ),
         ],
       ),

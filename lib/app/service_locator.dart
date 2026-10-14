@@ -1,5 +1,9 @@
 import 'package:get_it/get_it.dart';
 import '../core/database/app_database.dart';
+import '../features/backup/data/datasources/backup_local_datasource.dart';
+import '../features/backup/data/repositories/backup_repository_impl.dart';
+import '../features/backup/domain/repositories/backup_repository.dart';
+import '../features/backup/presentation/cubit/backup_cubit.dart';
 import '../features/customers/data/datasources/customer_local_datasource.dart';
 import '../features/customers/data/repositories/customer_repository_impl.dart';
 import '../features/customers/domain/repositories/customer_repository.dart';
@@ -36,6 +40,7 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerLazySingleton<WalletLocalDataSource>(() => WalletLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<PurchaseLocalDataSource>(() => PurchaseLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<ReportsLocalDataSource>(() => ReportsLocalDataSourceImpl(sl<AppDatabase>()));
+  sl.registerLazySingleton<BackupLocalDataSource>(() => BackupLocalDataSourceImpl(sl<AppDatabase>()));
 
   // Repositories
   sl.registerLazySingleton<CustomerRepository>(() => CustomerRepositoryImpl(sl<CustomerLocalDataSource>()));
@@ -43,6 +48,7 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerLazySingleton<WalletRepository>(() => WalletRepositoryImpl(sl<WalletLocalDataSource>()));
   sl.registerLazySingleton<PurchaseRepository>(() => PurchaseRepositoryImpl(sl<PurchaseLocalDataSource>()));
   sl.registerLazySingleton<ReportsRepository>(() => ReportsRepositoryImpl(sl<ReportsLocalDataSource>()));
+  sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl<BackupLocalDataSource>()));
 
   // Domain Services
   sl.registerLazySingleton<BatchCostAllocator>(() => const BatchCostAllocator());
@@ -58,4 +64,5 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerFactory<WalletCubit>(() => WalletCubit(sl<WalletRepository>())..loadWallets());
   sl.registerFactory<PurchaseCubit>(() => PurchaseCubit(sl<PurchaseRepository>())..loadBatches());
   sl.registerFactory<ReportsCubit>(() => ReportsCubit(sl<ReportsRepository>())..loadReports());
+  sl.registerFactory<BackupCubit>(() => BackupCubit(sl<BackupRepository>())..loadBackups());
 }

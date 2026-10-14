@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../core/constants/app_strings.dart';
 import '../core/theme/app_theme.dart';
+import '../features/backup/presentation/cubit/backup_cubit.dart';
 import '../features/customers/presentation/cubit/customer_cubit.dart';
 import '../features/home/presentation/cubit/home_cubit.dart';
 import '../features/orders/presentation/bloc/order_bloc.dart';
@@ -36,6 +37,9 @@ class StoreeApp extends StatelessWidget {
         ),
         BlocProvider<ReportsCubit>(
           create: (_) => sl<ReportsCubit>(),
+        ),
+        BlocProvider<BackupCubit>(
+          create: (_) => sl<BackupCubit>(),
         ),
       ],
       child: MaterialApp.router(

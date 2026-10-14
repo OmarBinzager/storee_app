@@ -8,6 +8,7 @@ import '../../../../core/widgets/storee_badge.dart';
 import '../../../../core/widgets/storee_card.dart';
 import '../../../../core/widgets/storee_empty_state.dart';
 import '../../domain/entities/customer_order.dart';
+import '../../../purchases/presentation/pages/purchases_page.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
@@ -22,6 +23,15 @@ class OrdersPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(AppStrings.navOrders),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.local_shipping_outlined, color: AppColors.textPrimary),
+            tooltip: 'فواتير الشراء الجماعي',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PurchasesPage()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add_shopping_cart_rounded, color: AppColors.primary),
             tooltip: 'إنشاء طلبية جديدة',

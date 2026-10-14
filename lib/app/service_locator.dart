@@ -10,7 +10,11 @@ import '../features/orders/data/repositories/order_repository_impl.dart';
 import '../features/orders/domain/repositories/order_repository.dart';
 import '../features/orders/presentation/bloc/order_bloc.dart';
 import '../features/orders/presentation/bloc/order_event.dart';
+import '../features/purchases/data/datasources/purchase_local_datasource.dart';
+import '../features/purchases/data/repositories/purchase_repository_impl.dart';
+import '../features/purchases/domain/repositories/purchase_repository.dart';
 import '../features/purchases/domain/services/batch_cost_allocator.dart';
+import '../features/purchases/presentation/cubit/purchase_cubit.dart';
 import '../features/wallets/data/datasources/wallet_local_datasource.dart';
 import '../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../features/wallets/domain/repositories/wallet_repository.dart';
@@ -26,11 +30,13 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerLazySingleton<CustomerLocalDataSource>(() => CustomerLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<OrderLocalDataSource>(() => OrderLocalDataSourceImpl(sl<AppDatabase>()));
   sl.registerLazySingleton<WalletLocalDataSource>(() => WalletLocalDataSourceImpl(sl<AppDatabase>()));
+  sl.registerLazySingleton<PurchaseLocalDataSource>(() => PurchaseLocalDataSourceImpl(sl<AppDatabase>()));
 
   // Repositories
   sl.registerLazySingleton<CustomerRepository>(() => CustomerRepositoryImpl(sl<CustomerLocalDataSource>()));
   sl.registerLazySingleton<OrderRepository>(() => OrderRepositoryImpl(sl<OrderLocalDataSource>()));
   sl.registerLazySingleton<WalletRepository>(() => WalletRepositoryImpl(sl<WalletLocalDataSource>()));
+  sl.registerLazySingleton<PurchaseRepository>(() => PurchaseRepositoryImpl(sl<PurchaseLocalDataSource>()));
 
   // Domain Services
   sl.registerLazySingleton<BatchCostAllocator>(() => const BatchCostAllocator());
@@ -40,4 +46,5 @@ Future<void> initServiceLocator({AppDatabase? database}) async {
   sl.registerFactory<OrderBloc>(() => OrderBloc(sl<OrderRepository>())..add(const LoadOrdersEvent()));
   sl.registerFactory<CustomerCubit>(() => CustomerCubit(sl<CustomerRepository>())..loadCustomers());
   sl.registerFactory<WalletCubit>(() => WalletCubit(sl<WalletRepository>())..loadWallets());
+  sl.registerFactory<PurchaseCubit>(() => PurchaseCubit(sl<PurchaseRepository>())..loadBatches());
 }

@@ -8,6 +8,7 @@ import '../../features/customers/presentation/widgets/add_customer_dialog.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/orders/presentation/pages/orders_page.dart';
 import '../../features/orders/presentation/widgets/add_order_sheet.dart';
+import '../../features/purchases/presentation/widgets/create_purchase_batch_sheet.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/wallets/presentation/pages/wallets_page.dart';
 import '../../features/wallets/presentation/widgets/record_expense_dialog.dart';
@@ -116,7 +117,10 @@ class _MainScaffoldState extends State<MainScaffold> {
                       icon: Icons.local_shipping_outlined,
                       title: AppStrings.newPurchaseBatch,
                       color: AppColors.primaryDark,
-                      onTap: () => Navigator.pop(ctx),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        CreatePurchaseBatchSheet.show(context);
+                      },
                     ),
                   ],
                 ),
